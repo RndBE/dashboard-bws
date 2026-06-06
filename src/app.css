@@ -1,0 +1,204 @@
+@import '@fontsource/geist-sans/400.css';
+@import '@fontsource/geist-sans/500.css';
+@import '@fontsource/geist-sans/600.css';
+@import '@fontsource/geist-sans/700.css';
+@import '@fontsource/geist-mono/400.css';
+@import '@fontsource/geist-mono/500.css';
+@import '@fontsource/geist-mono/600.css';
+@import 'leaflet/dist/leaflet.css';
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Geist Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* Surfaces — deep slate-navy command center */
+  --color-bg: #0a0f1c;
+  --color-surface: #0e1626;
+  --color-panel: #101a2e;
+  --color-panel-2: #0d1626;
+  --color-line: #1c2740;
+  --color-line-soft: #18223a;
+
+  /* Ink */
+  --color-ink: #c3cdde;
+  --color-ink-strong: #e8eef7;
+  --color-ink-muted: #7b8aa3;
+  --color-ink-dim: #5d6f8c;
+
+  /* PU accent — azur biru + kuning emas */
+  --color-accent: #1d6fd6;
+  --color-accent-bright: #4f9bee;
+  --color-gold: #f0b429;
+
+  /* Status siaga (diredam) */
+  --color-normal: #3fb27f;
+  --color-waspada: #c9a227;
+  --color-siaga: #e08a3c;
+  --color-awas: #d8635f;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    color: var(--color-ink);
+    background-color: var(--color-bg);
+    background-image:
+      radial-gradient(
+        1100px 560px at 78% -12%,
+        rgba(29, 111, 214, 0.1),
+        transparent 60%
+      ),
+      radial-gradient(
+        820px 460px at 6% 112%,
+        rgba(240, 180, 41, 0.045),
+        transparent 55%
+      );
+    background-attachment: fixed;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'cv01', 'ss01';
+  }
+
+  /* Tabular numerals everywhere mono is used */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Custom scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--color-line);
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: #25324f;
+    background-clip: content-box;
+  }
+}
+
+@layer components {
+  /* Faint grid texture for panels that want atmosphere */
+  .grid-texture {
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+}
+
+/* ---- Leaflet dark overrides ---- */
+.leaflet-container {
+  background: #0a1120;
+  font-family: var(--font-sans);
+}
+.leaflet-control-zoom a {
+  background: var(--color-surface) !important;
+  color: var(--color-ink) !important;
+  border-color: var(--color-line) !important;
+}
+.leaflet-control-zoom a:hover {
+  background: #16223c !important;
+  color: var(--color-ink-strong) !important;
+}
+.leaflet-control-attribution {
+  background: rgba(10, 15, 28, 0.72) !important;
+  color: var(--color-ink-dim) !important;
+}
+.leaflet-control-attribution a {
+  color: var(--color-ink-muted) !important;
+}
+.leaflet-bar {
+  border: 1px solid var(--color-line) !important;
+}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 1px solid var(--color-line);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+}
+.leaflet-popup-content {
+  margin: 0;
+}
+.leaflet-popup-close-button {
+  color: var(--color-ink-muted) !important;
+}
+.leaflet-tooltip.bws-tip {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5);
+  font-size: 11px;
+  padding: 6px 9px;
+}
+.leaflet-tooltip.bws-tip::before {
+  display: none;
+}
+
+/* Animated map marker */
+.bws-marker {
+  display: grid;
+  place-items: center;
+}
+.bws-marker .ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid currentColor;
+  opacity: 0.55;
+}
+.bws-marker .core {
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: currentColor;
+  box-shadow: 0 0 0 4px rgba(10, 15, 28, 0.7);
+}
+.bws-marker.pulse .ring {
+  animation: bws-pulse 1.8s ease-out infinite;
+}
+@keyframes bws-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+@keyframes bws-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-up {
+  animation: bws-fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
