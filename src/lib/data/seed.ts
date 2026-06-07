@@ -6,6 +6,7 @@ import type {
   Instrument,
   InstrumentStatus,
   PosHidrologi,
+  PosTipe,
   SeriesPoint,
   SumurPantau,
   AsetOP,
@@ -18,8 +19,7 @@ import {
   sumurStatus,
 } from './derive';
 
-export const WS_NAME = 'Wilayah Sungai Cidanau–Cigaru';
-export const BALAI_NAME = 'Balai Wilayah Sungai Nusa Barat';
+export const BALAI_NAME = 'STESY Command Center';
 export const MAP_CENTER: [number, number] = [-6.48, 106.16];
 export const MAP_ZOOM = 10;
 
@@ -54,20 +54,6 @@ function genSeries(
   return pts;
 }
 
-/** deret hujan: kebanyakan kecil, sesekali memuncak */
-function genRain(now: number): SeriesPoint[] {
-  const pts: SeriesPoint[] = [];
-  for (let i = 0; i < HIST_LEN; i++) {
-    const burst = Math.random() < 0.18 ? Math.random() * 22 : 0;
-    const base = Math.random() * 3;
-    pts.push({
-      t: now - (HIST_LEN - 1 - i) * HIST_STEP,
-      v: round(base + burst, 1),
-    });
-  }
-  return pts;
-}
-
 // ---------- Instrumen / alat ukur per aset ----------
 let instSeq = 0;
 
@@ -85,6 +71,7 @@ function inst(
     noise?: number;
     min?: number;
     status?: InstrumentStatus;
+    category?: 'telemetry' | 'health';
   } = {},
 ): Instrument {
   const digits = opts.digits ?? 1;
@@ -105,6 +92,7 @@ function inst(
     history: genSeries(value, amp, noise, now, opts.min ?? 0),
     primary: opts.primary,
     valueDigits: digits,
+    category: opts.category,
   };
 }
 
@@ -121,14 +109,116 @@ function withFault(list: Instrument[]): Instrument[] {
   return list;
 }
 
-function posInstruments(p: { id: string; tma: number; hujan: number }, now: number): Instrument[] {
+/** indikator kesehatan catu daya surya (bukan alat ukur) */
+function solar(id: string, now: number): Instrument {
+  return inst(id, 'Panel Surya', 'Catu Daya Surya', 80 + Math.random() * 18, '% daya', now, {
+    digits: 0,
+    amp: 12,
+    noise: 3,
+    min: 0,
+    category: 'health',
+  });
+}
+
+/** Pos Duga Air (AWLR) — TMA; debit turunan rating curve */
+function dugaAirInstruments(p: { id: string; tma: number }, now: number): Instrument[] {
   return withFault([
-    inst(p.id, 'AWLR', 'AWLR — Pencatat TMA Otomatis', p.tma, 'm', now, { primary: true, digits: 2, amp: 1.6, noise: 0.12 }),
-    inst(p.id, 'ARR', 'ARR — Pencatat Hujan Otomatis', p.hujan, 'mm', now, { digits: 1, amp: 10, noise: 3, min: 0 }),
-    inst(p.id, 'Papan Duga', 'Papan Duga Air (manual)', p.tma, 'm', now, { digits: 2, amp: 1.5, noise: 0.1 }),
-    inst(p.id, 'Telemetri', 'Stasiun Telemetri', 88 + Math.random() * 10, '%', now, { digits: 0, amp: 6, noise: 2, min: 0 }),
-    inst(p.id, 'Panel Surya', 'Catu Daya Surya', 80 + Math.random() * 18, '%', now, { digits: 0, amp: 12, noise: 3, min: 0 }),
+    inst(p.id, 'TMA', 'TMA — Pencatat Muka Air Otomatis (AWLR)', p.tma, 'm', now, { primary: true, digits: 2, amp: 1.6, noise: 0.12 }),
+    solar(p.id, now),
   ]);
+}
+
+/** Pos Hujan (ARR) — curah hujan + intensitas */
+function hujanInstruments(p: { id: string; hujan: number }, now: number): Instrument[] {
+  return withFault([
+    inst(p.id, 'Curah Hujan', 'Curah Hujan — Penakar Otomatis (ARR)', p.hujan, 'mm', now, { primary: true, digits: 1, amp: 10, noise: 3, min: 0 }),
+    inst(p.id, 'Intensitas', 'Intensitas Hujan', p.hujan * 1.1 + Math.random() * 4, 'mm/jam', now, { digits: 1, amp: 8, noise: 2, min: 0 }),
+    solar(p.id, now),
+  ]);
+}
+
+/** Stasiun Klimatologi (AWS) — suhu (utama) + parameter cuaca */
+function klimatologiInstruments(p: { id: string }, now: number): Instrument[] {
+  return withFault([
+    inst(p.id, 'Suhu Udara', 'Suhu Udara', 24 + Math.random() * 8, '°C', now, { primary: true, digits: 1, amp: 3, noise: 0.6, min: 18 }),
+    inst(p.id, 'Kelembaban', 'Kelembaban Relatif', 70 + Math.random() * 25, '%', now, { digits: 0, amp: 8, noise: 2, min: 30 }),
+    inst(p.id, 'Kecepatan Angin', 'Kecepatan Angin', 2 + Math.random() * 8, 'm/s', now, { digits: 1, amp: 3, noise: 1, min: 0 }),
+    inst(p.id, 'Arah Angin', 'Arah Angin', Math.random() * 360, '°', now, { digits: 0, amp: 60, noise: 20, min: 0 }),
+    inst(p.id, 'Tekanan Udara', 'Tekanan Udara', 1008 + Math.random() * 8, 'hPa', now, { digits: 0, amp: 3, noise: 1, min: 990 }),
+    inst(p.id, 'Radiasi Matahari', 'Radiasi Matahari', 300 + Math.random() * 500, 'W/m²', now, { digits: 0, amp: 200, noise: 50, min: 0 }),
+    solar(p.id, now),
+  ]);
+}
+
+/** Pos Kualitas Air (AWQR) — pH (utama) + parameter mutu air */
+function kualitasInstruments(p: { id: string }, now: number): Instrument[] {
+  return withFault([
+    inst(p.id, 'pH', 'pH Air', 6.8 + Math.random() * 1.4, 'pH', now, { primary: true, digits: 1, amp: 0.3, noise: 0.08, min: 5.5 }),
+    inst(p.id, 'DO', 'Oksigen Terlarut (DO)', 4 + Math.random() * 4, 'mg/L', now, { digits: 1, amp: 1, noise: 0.3, min: 0 }),
+    inst(p.id, 'Kekeruhan', 'Kekeruhan', 8 + Math.random() * 40, 'NTU', now, { digits: 0, amp: 10, noise: 4, min: 0 }),
+    inst(p.id, 'TDS', 'Zat Padat Terlarut (TDS)', 120 + Math.random() * 180, 'mg/L', now, { digits: 0, amp: 40, noise: 12, min: 0 }),
+    inst(p.id, 'Suhu Air', 'Suhu Air', 25 + Math.random() * 5, '°C', now, { digits: 1, amp: 2, noise: 0.5, min: 20 }),
+    inst(p.id, 'DHL', 'Daya Hantar Listrik', 200 + Math.random() * 300, 'µS/cm', now, { digits: 0, amp: 60, noise: 20, min: 0 }),
+    solar(p.id, now),
+  ]);
+}
+
+/** kunci parameter utama per tipe (untuk analisa) */
+const POS_PARAM_KEY: Record<PosTipe, string> = {
+  'duga-air': 'tma',
+  hujan: 'hujan',
+  klimatologi: 'suhu',
+  kualitas: 'ph',
+};
+
+interface PosSeedBase {
+  id: string;
+  name: string;
+  tipe: PosTipe;
+  river?: string;
+  lat: number;
+  lng: number;
+  /** duga-air */
+  tma?: number;
+  debit?: number;
+  /** hujan */
+  hujan?: number;
+  thresholds?: { waspada: number; siaga: number; awas: number };
+}
+
+function buildPos(base: PosSeedBase, now: number): PosHidrologi {
+  const instruments =
+    base.tipe === 'duga-air'
+      ? dugaAirInstruments({ id: base.id, tma: base.tma ?? 1 }, now)
+      : base.tipe === 'hujan'
+        ? hujanInstruments({ id: base.id, hujan: base.hujan ?? 0 }, now)
+        : base.tipe === 'klimatologi'
+          ? klimatologiInstruments({ id: base.id }, now)
+          : kualitasInstruments({ id: base.id }, now);
+  const prim = instruments.find((i) => i.primary) ?? instruments[0];
+  const pos: PosHidrologi = {
+    id: base.id,
+    name: base.name,
+    tipe: base.tipe,
+    river: base.river,
+    lat: base.lat,
+    lng: base.lng,
+    param: {
+      key: POS_PARAM_KEY[base.tipe],
+      label: prim.type,
+      value: prim.value,
+      unit: prim.unit,
+      digits: prim.valueDigits ?? 1,
+    },
+    history: prim.history,
+    thresholds: base.thresholds,
+    debit: base.debit,
+    status: 'normal',
+    updatedAt: now - Math.floor(Math.random() * 90_000),
+    instruments,
+  };
+  pos.status = posStatus(pos);
+  return pos;
 }
 
 function bendunganInstruments(
@@ -154,15 +244,15 @@ function irigasiInstruments(
   const avg = d.pintu.reduce((s, g) => s + g.opening, 0) / d.pintu.length;
   return withFault([
     inst(d.id, 'AWLR', 'AWLR — Debit Saluran', d.debit, 'm³/s', now, { primary: true, digits: 1, amp: d.debit * 0.3 + 1, noise: d.debit * 0.05 + 0.2, min: 0 }),
+    inst(d.id, 'ARR', 'ARR — Pencatat Hujan', 4 + Math.random() * 14, 'mm', now, { digits: 1, amp: 9, noise: 3, min: 0 }),
     inst(d.id, 'Sensor Pintu', 'Sensor Bukaan Pintu', avg, '%', now, { digits: 0, amp: 8, noise: 2, min: 0 }),
-    inst(d.id, 'Telemetri', 'Stasiun Telemetri', 85 + Math.random() * 12, '%', now, { digits: 0, amp: 6, noise: 2, min: 0 }),
   ]);
 }
 
 function sumurInstruments(s: { id: string; muka: number }, now: number): Instrument[] {
   return withFault([
     inst(s.id, 'Water Level Logger', 'Logger Muka Air Tanah', s.muka, 'm', now, { primary: true, digits: 2, amp: 1.2, noise: 0.1, min: 0 }),
-    inst(s.id, 'Telemetri', 'Datalogger Telemetri', 82 + Math.random() * 14, '%', now, { digits: 0, amp: 6, noise: 2, min: 0 }),
+    inst(s.id, 'Panel Surya', 'Catu Daya Surya', 78 + Math.random() * 20, '% daya', now, { digits: 0, amp: 12, noise: 3, min: 0, category: 'health' }),
   ]);
 }
 
@@ -186,89 +276,28 @@ function opInstruments(
 }
 
 export function buildData(now: number): DashboardData {
-  // ----- Pos Duga Air / Hidrologi -----
-  const posSeed: Array<
-    Omit<
-      PosHidrologi,
-      'status' | 'historyTMA' | 'historyHujan' | 'updatedAt' | 'instruments'
-    >
-  > = [
-    {
-      id: 'pos-cisanti',
-      name: 'Pos Cisanti (Hulu)',
-      river: 'S. Cigaru',
-      lat: -6.305,
-      lng: 105.985,
-      tma: 1.42,
-      debit: 38,
-      hujan: 4,
-      thresholds: { waspada: 2.2, siaga: 3.0, awas: 3.8 },
-    },
-    {
-      id: 'pos-citarik',
-      name: 'Pos Citarik',
-      river: 'S. Citarik',
-      lat: -6.41,
-      lng: 106.1,
-      tma: 2.05,
-      debit: 96,
-      hujan: 11,
-      thresholds: { waspada: 2.4, siaga: 3.2, awas: 4.0 },
-    },
-    {
-      id: 'pos-cigaru-tengah',
-      name: 'Pos Cigaru Tengah',
-      river: 'S. Cigaru',
-      lat: -6.5,
-      lng: 106.2,
-      tma: 2.62,
-      debit: 188,
-      hujan: 18,
-      thresholds: { waspada: 2.5, siaga: 3.3, awas: 4.1 },
-    },
-    {
-      id: 'pos-cikawung',
-      name: 'Pos Cikawung',
-      river: 'S. Cikawung',
-      lat: -6.462,
-      lng: 106.33,
-      tma: 1.88,
-      debit: 74,
-      hujan: 6,
-      thresholds: { waspada: 2.3, siaga: 3.1, awas: 3.9 },
-    },
-    {
-      id: 'pos-hilir-muara',
-      name: 'Pos Duga Air Hilir',
-      river: 'S. Cigaru',
-      lat: -6.62,
-      lng: 106.12,
-      tma: 4.18,
-      debit: 312,
-      hujan: 27,
-      thresholds: { waspada: 2.6, siaga: 3.4, awas: 4.0 },
-    },
-    {
-      id: 'pos-cidurian',
-      name: 'Pos Cidurian',
-      river: 'S. Cidurian',
-      lat: -6.38,
-      lng: 106.25,
-      tma: 1.66,
-      debit: 58,
-      hujan: 3,
-      thresholds: { waspada: 2.2, siaga: 3.0, awas: 3.8 },
-    },
+  // ----- Pos telemetri (per tipe logger: AWLR / ARR / AWS / AWQR) -----
+  const posSeed: PosSeedBase[] = [
+    // Pos Duga Air (AWLR) — TMA + debit
+    { id: 'pos-cisanti', name: 'Pos Cisanti (Hulu)', tipe: 'duga-air', river: 'S. Cigaru', lat: -6.305, lng: 105.985, tma: 1.42, debit: 38, thresholds: { waspada: 2.2, siaga: 3.0, awas: 3.8 } },
+    { id: 'pos-citarik', name: 'Pos Citarik', tipe: 'duga-air', river: 'S. Citarik', lat: -6.41, lng: 106.1, tma: 2.05, debit: 96, thresholds: { waspada: 2.4, siaga: 3.2, awas: 4.0 } },
+    { id: 'pos-cigaru-tengah', name: 'Pos Cigaru Tengah', tipe: 'duga-air', river: 'S. Cigaru', lat: -6.5, lng: 106.2, tma: 2.62, debit: 188, thresholds: { waspada: 2.5, siaga: 3.3, awas: 4.1 } },
+    { id: 'pos-cikawung', name: 'Pos Cikawung', tipe: 'duga-air', river: 'S. Cikawung', lat: -6.462, lng: 106.33, tma: 1.88, debit: 74, thresholds: { waspada: 2.3, siaga: 3.1, awas: 3.9 } },
+    { id: 'pos-hilir-muara', name: 'Pos Duga Air Hilir', tipe: 'duga-air', river: 'S. Cigaru', lat: -6.62, lng: 106.12, tma: 4.18, debit: 312, thresholds: { waspada: 2.6, siaga: 3.4, awas: 4.0 } },
+    { id: 'pos-cidurian', name: 'Pos Cidurian', tipe: 'duga-air', river: 'S. Cidurian', lat: -6.38, lng: 106.25, tma: 1.66, debit: 58, thresholds: { waspada: 2.2, siaga: 3.0, awas: 3.8 } },
+    // Pos Hujan (ARR) — curah hujan (ambang intensitas mm)
+    { id: 'pos-hujan-cigaru', name: 'Pos Hujan Cigaru Hulu', tipe: 'hujan', river: 'S. Cigaru', lat: -6.46, lng: 106.06, hujan: 8, thresholds: { waspada: 20, siaga: 50, awas: 100 } },
+    { id: 'pos-hujan-citarik', name: 'Pos Hujan Citarik', tipe: 'hujan', river: 'S. Citarik', lat: -6.39, lng: 106.14, hujan: 16, thresholds: { waspada: 20, siaga: 50, awas: 100 } },
+    { id: 'pos-hujan-cidurian', name: 'Pos Hujan Cidurian', tipe: 'hujan', river: 'S. Cidurian', lat: -6.55, lng: 106.3, hujan: 34, thresholds: { waspada: 20, siaga: 50, awas: 100 } },
+    // Stasiun Klimatologi (AWS) — informatif
+    { id: 'aws-balai', name: 'Stasiun Klimatologi Balai', tipe: 'klimatologi', lat: -6.48, lng: 106.16 },
+    { id: 'aws-pesisir', name: 'Stasiun Klimatologi Pesisir', tipe: 'klimatologi', lat: -6.66, lng: 106.02 },
+    // Pos Kualitas Air (AWQR) — status mutu air
+    { id: 'awqr-cigaru-hilir', name: 'Pos Kualitas Air Cigaru', tipe: 'kualitas', river: 'S. Cigaru', lat: -6.6, lng: 106.15 },
+    { id: 'awqr-cibanten', name: 'Pos Kualitas Air Cibanten', tipe: 'kualitas', river: 'S. Cibanten', lat: -6.33, lng: 106.03 },
   ];
 
-  const pos: PosHidrologi[] = posSeed.map((p) => ({
-    ...p,
-    status: posStatus(p),
-    updatedAt: now - Math.floor(Math.random() * 90_000),
-    historyTMA: genSeries(p.tma, 1.6, 0.12, now, 0),
-    historyHujan: genRain(now),
-    instruments: posInstruments(p, now),
-  }));
+  const pos: PosHidrologi[] = posSeed.map((b) => buildPos(b, now));
 
   // ----- Bendungan -----
   const bendSeed: Array<

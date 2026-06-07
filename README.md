@@ -54,6 +54,31 @@ npm run preview   # preview hasil build
 npm run check     # type-check (svelte-check + tsc)
 ```
 
+## Deploy (VPS + pm2)
+
+Routing memakai **History API** → URL bersih (mis. `/bendungan/bend-cigaru`,
+tanpa `#`). Konsekuensinya server harus mengarahkan semua path ke `index.html`
+(SPA fallback), kalau tidak refresh/buka-link-langsung akan 404. pm2 sudah
+menyediakannya lewat opsi `--spa`:
+
+```bash
+npm run build                 # → dist/
+pm2 start ecosystem.config.cjs    # serve dist/ di :8080 dengan SPA fallback
+# atau manual:  pm2 serve dist 8080 --spa
+```
+
+nginx tinggal reverse-proxy ke port tersebut — **tanpa aturan rewrite khusus**:
+
+```nginx
+location / {
+    proxy_pass http://localhost:8080;
+    proxy_set_header Host $host;
+}
+```
+
+> Alternatif tanpa pm2: serve `dist/` langsung dari nginx dan tambahkan
+> `try_files $uri /index.html;` di blok `location /`.
+
 ## Struktur
 
 ```

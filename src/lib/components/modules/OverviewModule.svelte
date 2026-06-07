@@ -28,10 +28,16 @@
 
   const agg = $derived.by(() => {
     const d = $data;
-    const hujanSeries = avgSeries(d.pos.map((p) => p.historyHujan));
-    const hujanAvg = d.pos.reduce((s, p) => s + p.hujan, 0) / d.pos.length;
-    const peakPos = d.pos.reduce((a, b) => (b.tma > a.tma ? b : a));
-    const peakDebit = Math.max(...d.pos.map((p) => p.debit));
+    const dugaAir = d.pos.filter((p) => p.tipe === 'duga-air');
+    const hujanPos = d.pos.filter((p) => p.tipe === 'hujan');
+    const hujanSeries = avgSeries(hujanPos.map((p) => p.history));
+    const hujanAvg = hujanPos.length
+      ? hujanPos.reduce((s, p) => s + p.param.value, 0) / hujanPos.length
+      : 0;
+    const peakPos = dugaAir.length
+      ? dugaAir.reduce((a, b) => (b.param.value > a.param.value ? b : a))
+      : null;
+    const peakDebit = dugaAir.length ? Math.max(...dugaAir.map((p) => p.debit ?? 0)) : 0;
     const sumVol = d.bendungan.reduce((s, b) => s + b.volume, 0);
     const sumKap = d.bendungan.reduce((s, b) => s + b.kapasitas, 0);
     const tampungan = sumKap > 0 ? (sumVol / sumKap) * 100 : 0;
@@ -74,24 +80,24 @@
 <div class="flex flex-col gap-3">
   <!-- KPI strip -->
   <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-    <KpiCard label="Hujan rata-rata" value={num(agg.hujanAvg, 1)} unit="mm/jam" icon={CloudRainWind}>
+    <KpiCard label="Hujan rata-rata" value={num(agg.hujanAvg, 1)} unit="mm" icon={CloudRainWind}>
       {#snippet footer()}
         <Sparkline points={agg.hujanSeries} color="#4f9bee" height={30} />
       {/snippet}
     </KpiCard>
 
-    <KpiCard label="TMA puncak" value={num(agg.peakPos.tma, 2)} unit="m" icon={Waves} accent>
+    <KpiCard label="TMA puncak" value={num(agg.peakPos?.param.value ?? 0, 2)} unit="m" icon={Waves} accent>
       {#snippet footer()}
         <div class="flex items-center justify-between gap-2">
-          <span class="truncate text-[10px] text-ink-dim">{agg.peakPos.name}</span>
-          <Delta delta={deltaArr(agg.peakPos.historyTMA.map((p) => p.v))} unit=" m" digits={2} badWhen="up" />
+          <span class="truncate text-[10px] text-ink-dim">{agg.peakPos?.name ?? '—'}</span>
+          <Delta delta={deltaArr((agg.peakPos?.history ?? []).map((p) => p.v))} unit=" m" digits={2} badWhen="up" />
         </div>
       {/snippet}
     </KpiCard>
 
     <KpiCard label="Debit puncak" value={num(agg.peakDebit, 0)} unit="m³/s" icon={Activity}>
       {#snippet footer()}
-        <Sparkline points={agg.peakPos.historyTMA.map((p) => p.v * (agg.peakDebit / agg.peakPos.tma))} color="#4f9bee" height={30} />
+        <Sparkline points={(agg.peakPos?.history ?? []).map((p) => p.v * (agg.peakDebit / (agg.peakPos?.param.value || 1)))} color="#4f9bee" height={30} />
       {/snippet}
     </KpiCard>
 
@@ -117,7 +123,7 @@
   <!-- Map + alerts -->
   <div class="grid grid-cols-1 gap-3 lg:grid-cols-3">
     <div class="lg:col-span-2">
-      <Panel title="Peta Wilayah Sungai" subtitle="Status pos pemantauan · klik penanda untuk detail" icon={Map} flush>
+      <Panel title="Peta Operasional" subtitle="Status pos pemantauan · klik penanda untuk detail" icon={Map} flush>
         <div class="relative h-[440px] overflow-hidden rounded-b-xl">
           <BasinMap>
             {#snippet overlay()}

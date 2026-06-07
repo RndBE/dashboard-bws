@@ -1,7 +1,12 @@
-// Router hash ringan — memberi tiap menu URL sendiri (mis. #/bendungan)
-// dan menyinkronkannya dua arah dengan store UI. Tanpa library tambahan;
-// hash routing aman untuk SPA Vite (tanpa konfigurasi server) dan mendukung
-// tombol back/forward serta tautan yang bisa di-bookmark/-bagikan.
+// Router history ringan — memberi tiap menu URL bersih sendiri (mis. /bendungan)
+// dan menyinkronkannya dua arah dengan store UI. Tanpa library tambahan.
+//
+// Catatan deploy: router ini memakai History API (URL tanpa "#"), sehingga
+// server harus mengarahkan semua path ke index.html (SPA fallback). Di VPS
+// gunakan `pm2 serve dist <port> --spa` (lihat ecosystem.config.cjs); Vite
+// dev/preview sudah menangani fallback secara otomatis. Navigasi di aplikasi
+// ini berlangsung lewat store (klik tab/aset), jadi router cukup memantau
+// perubahan store → URL dan tombol back/forward (popstate) → store.
 
 import { get } from 'svelte/store';
 import { activeModule, mode, selected } from './stores';
@@ -19,7 +24,11 @@ const KINDS: AssetKind[] = ['pos', 'bendungan', 'irigasi', 'sumur', 'op'];
 
 const DEFAULT_MODULE: ModuleKey = 'ringkasan';
 
-/** Bentuk path dari state saat ini. */
+// Base path aplikasi dari Vite (mis. "/" atau "/dashboard/"), tanpa trailing
+// slash agar mudah digabung dengan path internal. Default "" bila di-root.
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+/** Bentuk path internal (relatif terhadap BASE) dari state saat ini. */
 function pathFromState(): string {
   if (get(mode) === 'wall') return '/wall';
   const sel = get(selected);
@@ -27,15 +36,26 @@ function pathFromState(): string {
   return `/${get(activeModule)}`;
 }
 
-/** Tulis hash dari state (jika berbeda), tanpa memicu loop. */
+/** URL penuh yang ditulis ke address bar = BASE + path internal. */
+function urlFromState(): string {
+  return `${BASE}${pathFromState()}`;
+}
+
+/** Segmen path internal saat ini (BASE sudah dilepas). */
+function currentParts(): string[] {
+  let path = location.pathname;
+  if (BASE && path.startsWith(BASE)) path = path.slice(BASE.length);
+  return path.split('/').filter(Boolean); // mis. ["bendungan","bend-cigaru"]
+}
+
+/** Tulis URL dari state (jika berbeda), tanpa memicu loop. */
 let suppress = false;
 /** Sinkronisasi awal memakai replaceState agar tidak menambah entri history. */
 let initialSync = true;
-function writeHash() {
+function writeUrl() {
   if (suppress) return;
-  const path = pathFromState();
-  const target = `#${path}`;
-  if (location.hash !== target) {
+  const target = urlFromState();
+  if (location.pathname !== target) {
     if (initialSync) {
       history.replaceState(null, '', target);
     } else {
@@ -44,10 +64,9 @@ function writeHash() {
   }
 }
 
-/** Terapkan hash ke store. Mengembalikan true bila hash valid dikenali. */
-function applyHash() {
-  const raw = location.hash.replace(/^#/, '');
-  const parts = raw.split('/').filter(Boolean); // mis. ["bendungan","bend-cigaru"]
+/** Terapkan URL ke store. */
+function applyUrl() {
+  const parts = currentParts();
 
   suppress = true;
   try {
@@ -79,7 +98,7 @@ function applyHash() {
 let started = false;
 
 /**
- * Mulai router: terapkan hash awal (atau set default bila kosong), lalu
+ * Mulai router: terapkan URL awal (atau tulis default bila kosong), lalu
  * jaga sinkronisasi dua arah antara URL dan store.
  * Mengembalikan fungsi cleanup.
  */
@@ -87,32 +106,30 @@ export function startRouter(): () => void {
   if (started) return () => {};
   started = true;
 
-  // hash awal → state (atau tulis default bila belum ada hash)
-  if (location.hash.replace(/^#\/?/, '')) {
-    applyHash();
+  // URL awal → state (atau tulis default bila path kosong di BASE root)
+  if (currentParts().length) {
+    applyUrl();
   } else {
-    history.replaceState(null, '', `#${pathFromState()}`);
+    history.replaceState(null, '', urlFromState());
   }
 
-  // URL berubah (back/forward, edit manual) → state
-  const onHash = () => applyHash();
-  window.addEventListener('hashchange', onHash);
-  window.addEventListener('popstate', onHash);
+  // URL berubah lewat tombol back/forward → state
+  const onPop = () => applyUrl();
+  window.addEventListener('popstate', onPop);
 
   // state berubah → URL
-  // (subscribe memanggil writeHash sekali secara sinkron di sini — masih
+  // (subscribe memanggil writeUrl sekali secara sinkron di sini — masih
   //  fase initialSync sehingga memakai replaceState, tidak menambah history)
   const unsubs = [
-    activeModule.subscribe(writeHash),
-    mode.subscribe(writeHash),
-    selected.subscribe(writeHash),
+    activeModule.subscribe(writeUrl),
+    mode.subscribe(writeUrl),
+    selected.subscribe(writeUrl),
   ];
   // mulai sekarang navigasi nyata memakai pushState (mendukung back/forward)
   initialSync = false;
 
   return () => {
-    window.removeEventListener('hashchange', onHash);
-    window.removeEventListener('popstate', onHash);
+    window.removeEventListener('popstate', onPop);
     unsubs.forEach((u) => u());
     started = false;
   };

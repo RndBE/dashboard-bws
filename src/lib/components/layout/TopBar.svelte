@@ -3,24 +3,27 @@
   import Play from '@lucide/svelte/icons/play';
   import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
   import Monitor from '@lucide/svelte/icons/monitor';
+  import UserRound from '@lucide/svelte/icons/user-round';
+  import LogOut from '@lucide/svelte/icons/log-out';
   import Logo from './Logo.svelte';
   import Clock from '../ui/Clock.svelte';
   import StatusBadge from '../ui/StatusBadge.svelte';
   import { mode, paused, overallStatus, activeAlerts } from '../../stores';
-  import { BALAI_NAME, WS_NAME } from '../../data/seed';
+  import { auth, requestLogout } from '../../auth';
+  import { BALAI_NAME } from '../../data/seed';
 </script>
 
-<header
-  class="flex items-center gap-4 border-b border-line bg-surface/90 px-4 py-2.5 backdrop-blur"
->
+<header class="border-b border-line bg-surface/90 backdrop-blur">
+  <div
+    class="mx-auto flex w-full max-w-[1700px] items-center gap-4 px-3 py-2.5 sm:px-4"
+  >
   <div class="flex items-center gap-3">
-    <Logo height={24} />
+    <Logo height={26} />
     <div class="leading-tight">
-      <h1 class="text-[14px] font-semibold tracking-tight text-ink-strong">
-        Pusat Kendali <span class="text-accent-bright">·</span>
-        {BALAI_NAME}
-      </h1>
-      <p class="text-[11px] text-ink-muted">{WS_NAME}</p>
+      <div class="text-[9px] font-semibold uppercase tracking-[0.26em] text-pu-bright">
+        Pusat Kendali Operasi
+      </div>
+      <h1 class="text-[15px] font-semibold tracking-tight text-ink-strong">{BALAI_NAME}</h1>
     </div>
   </div>
 
@@ -75,5 +78,24 @@
         <Monitor size={13} /> Layar Dinding
       </button>
     </div>
+
+    <!-- Identitas pengguna + keluar -->
+    <div class="flex items-center gap-2 border-l border-line pl-3">
+      <div class="hidden text-right leading-tight sm:block">
+        <div class="text-[11.5px] font-medium text-ink-strong">{$auth?.name ?? ''}</div>
+        <div class="text-[9.5px] text-ink-dim">{$auth?.role ?? ''}</div>
+      </div>
+      <span class="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-line bg-panel-2 text-ink-muted">
+        <UserRound size={15} />
+      </span>
+      <button
+        onclick={requestLogout}
+        title="Keluar"
+        class="grid h-8 w-8 place-items-center rounded-lg border border-line text-ink-muted transition-colors hover:border-awas/50 hover:bg-awas/10 hover:text-awas"
+      >
+        <LogOut size={14} />
+      </button>
+    </div>
+  </div>
   </div>
 </header>

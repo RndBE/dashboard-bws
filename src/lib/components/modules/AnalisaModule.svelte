@@ -26,7 +26,7 @@
   import Delta from '../ui/Delta.svelte';
 
   import { data, clock, openDetail } from '../../stores';
-  import { STATUS } from '../../status';
+  import { STATUS, POS_TIPE_LABEL } from '../../status';
   import { num, signed, relTime } from '../../format';
   import type { SeriesPoint, Siaga } from '../../types';
   import {
@@ -89,23 +89,26 @@
   // ---------- bangun baris generik per kategori ----------
   const rows = $derived.by<Row[]>(() => {
     if (category === 'pos') {
-      return d.pos.map((p) => ({
-        id: p.id,
-        name: p.name,
-        sub: p.river,
-        status: p.status,
-        lat: p.lat,
-        lng: p.lng,
-        updatedAt: p.updatedAt,
-        current: { tma: p.tma, hujan: p.hujan, debit: p.debit },
-        history: { tma: p.historyTMA, hujan: p.historyHujan },
-        thresholds: p.thresholds,
-        instruments: p.instruments,
-        extra: [
-          { label: 'Debit', value: `${num(p.debit, 0)} m³/s` },
-          { label: 'Hujan 1 jam', value: `${num(p.hujan, 1)} mm` },
-        ],
-      }));
+      // pos heterogen → tampilkan hanya tipe yang sesuai parameter terpilih
+      return d.pos
+        .filter((p) => p.param.key === paramKey)
+        .map((p) => ({
+          id: p.id,
+          name: p.name,
+          sub: p.river ?? POS_TIPE_LABEL[p.tipe],
+          status: p.status,
+          lat: p.lat,
+          lng: p.lng,
+          updatedAt: p.updatedAt,
+          current: { [p.param.key]: p.param.value },
+          history: { [p.param.key]: p.history },
+          thresholds: p.thresholds,
+          instruments: p.instruments.filter((i) => i.category !== 'health'),
+          extra:
+            p.debit !== undefined
+              ? [{ label: 'Debit', value: `${num(p.debit, 0)} m³/s` }]
+              : [{ label: 'Tipe', value: POS_TIPE_LABEL[p.tipe] }],
+        }));
     }
     if (category === 'bendungan') {
       return d.bendungan.map((b) => ({
@@ -119,7 +122,7 @@
         current: { elevasi: b.elevasi, inflow: b.inflow, outflow: b.outflow },
         history: { elevasi: b.historyElevasi, inflow: b.historyInflow },
         thresholds: { waspada: b.elevasiNormal, siaga: (b.elevasiNormal + b.elevasiBanjir) / 2, awas: b.elevasiBanjir },
-        instruments: b.instruments,
+        instruments: b.instruments.filter((i) => i.category !== 'health'),
         extra: [
           { label: 'Tampungan', value: `${num((b.volume / b.kapasitas) * 100, 0)}%` },
           { label: 'Inflow / Outflow', value: `${num(b.inflow, 0)} / ${num(b.outflow, 0)} m³/s` },
@@ -138,7 +141,7 @@
         current: { debit: x.debit },
         history: { debit: x.historyDebit },
         thresholds: { waspada: x.kebutuhan * 0.9, siaga: x.kebutuhan * 0.75, awas: x.kebutuhan * 0.6 },
-        instruments: x.instruments,
+        instruments: x.instruments.filter((i) => i.category !== 'health'),
         extra: [
           { label: 'Kebutuhan', value: `${num(x.kebutuhan, 1)} m³/s` },
           { label: 'Luas layanan', value: `${num(x.layanan, 0)} ha` },
@@ -157,7 +160,7 @@
       current: { muka: s.muka },
       history: { muka: s.history },
       thresholds: { waspada: s.baseline + s.thresholds.waspada, siaga: s.baseline + s.thresholds.siaga, awas: s.baseline + s.thresholds.awas },
-      instruments: s.instruments,
+      instruments: s.instruments.filter((i) => i.category !== 'health'),
       extra: [
         { label: 'Baseline', value: `${num(s.baseline, 2)} m` },
         { label: 'Penurunan', value: `${signed(s.muka - s.baseline, 2)} m` },
@@ -169,10 +172,12 @@
   // Hanya bereaksi pada perubahan `category` (bukan tiap tick simulasi),
   // sehingga seleksi manual pengguna tidak ditimpa berulang.
   $effect(() => {
-    const cat = category; // satu-satunya dependensi yang dilacak
+    const cat = category; // dependensi terlacak
+    paramKey; // ikut dilacak: pos memfilter baris per parameter
     untrack(() => {
       if (!PARAMS[cat].some((p) => p.key === paramKey)) {
         paramKey = PARAMS[cat][0].key;
+        return;
       }
       const ids = rows.map((r) => r.id);
       const keep = selectedIds.filter((id) => ids.includes(id));
@@ -237,7 +242,7 @@
 
   // ambang utk grafik (hanya bila parameter = parameter utama berlevel)
   const showThresholds = $derived(
-    (category === 'pos' && paramKey === 'tma') ||
+    (category === 'pos' && (paramKey === 'tma' || paramKey === 'hujan')) ||
       (category === 'bendungan' && paramKey === 'elevasi') ||
       (category === 'sumur' && paramKey === 'muka') ||
       (category === 'irigasi' && paramKey === 'debit'),
@@ -253,18 +258,16 @@
     ];
   });
 
-  // ---------- korelasi (pos: Hujan vs TMA; lainnya: antar pos) ----------
+  // ---------- korelasi antar-stasiun (dua stasiun pertama terpilih, parameter sama) ----------
   const corrScatter = $derived.by(() => {
-    if (category !== 'pos' || selectedRows.length === 0) return null;
+    if (selectedRows.length < 2) return null;
+    const sx = takeRange(selectedRows[0].history[paramKey] ?? [], range.hours);
+    const sy = takeRange(selectedRows[1].history[paramKey] ?? [], range.hours);
+    const n = Math.min(sx.length, sy.length);
     const pts: { x: number; y: number; color: string }[] = [];
-    selectedRows.forEach((r, i) => {
-      const tma = takeRange(r.history.tma ?? [], range.hours);
-      const hujan = takeRange(r.history.hujan ?? [], range.hours);
-      const n = Math.min(tma.length, hujan.length);
-      for (let k = 0; k < n; k++) pts.push({ x: hujan[k].v, y: tma[k].v, color: colorFor(i) });
-    });
+    for (let k = 0; k < n; k++) pts.push({ x: sx[k].v, y: sy[k].v, color: colorFor(0) });
     const r = correlation(pts.map((p) => p.x), pts.map((p) => p.y));
-    return { pts, r };
+    return { pts, r, xName: selectedRows[0].name, yName: selectedRows[1].name };
   });
 
   // ranking nilai terkini (semua pos kategori)
@@ -470,8 +473,8 @@
           {/if}
         </Panel>
       {:else if view === 'korelasi'}
-        <Panel title="Korelasi {category === 'pos' ? 'Hujan ↔ TMA' : 'Antar Pos'}" subtitle="Sebaran titik {range.label}" icon={ScatterIcon} accent>
-          {#if category === 'pos' && corrScatter}
+        <Panel title="Korelasi Antar-Stasiun · {param.label}" subtitle="Sebaran titik {range.label}" icon={ScatterIcon} accent>
+          {#if corrScatter}
             <div class="mb-2 flex items-center gap-2 text-[11px] text-ink-muted">
               Koefisien korelasi (Pearson):
               <span class="font-mono font-semibold {Math.abs(corrScatter.r) > 0.5 ? 'text-gold' : 'text-ink-strong'}">{num(corrScatter.r, 2)}</span>
@@ -479,10 +482,10 @@
                 {Math.abs(corrScatter.r) > 0.7 ? '— korelasi kuat' : Math.abs(corrScatter.r) > 0.4 ? '— korelasi sedang' : '— korelasi lemah'}
               </span>
             </div>
-            <ScatterPlot points={corrScatter.pts} height={320} xLabel="Curah hujan (mm)" yLabel="TMA (m)" />
+            <ScatterPlot points={corrScatter.pts} height={320} xLabel="{corrScatter.xName} ({param.unit})" yLabel="{corrScatter.yName} ({param.unit})" />
           {:else}
             <div class="flex h-[320px] items-center justify-center text-[12px] text-ink-dim">
-              Analisa korelasi Hujan–TMA tersedia untuk kategori Pos Duga Air.
+              Pilih minimal 2 stasiun untuk melihat korelasi antar-stasiun pada parameter ini.
             </div>
           {/if}
         </Panel>

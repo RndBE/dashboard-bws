@@ -3,8 +3,17 @@ import type { InstrumentStatus } from './types';
 
 import Waves from '@lucide/svelte/icons/waves';
 import CloudRainWind from '@lucide/svelte/icons/cloud-rain-wind';
+import CloudDrizzle from '@lucide/svelte/icons/cloud-drizzle';
+import FlaskConical from '@lucide/svelte/icons/flask-conical';
+import Thermometer from '@lucide/svelte/icons/thermometer';
+import Wind from '@lucide/svelte/icons/wind';
+import Compass from '@lucide/svelte/icons/compass';
+import SunMedium from '@lucide/svelte/icons/sun-medium';
+import Droplet from '@lucide/svelte/icons/droplet';
+import GlassWater from '@lucide/svelte/icons/glass-water';
+import TestTube from '@lucide/svelte/icons/test-tube';
+import Zap from '@lucide/svelte/icons/zap';
 import Ruler from '@lucide/svelte/icons/ruler';
-import Radio from '@lucide/svelte/icons/radio';
 import Sun from '@lucide/svelte/icons/sun';
 import Gauge from '@lucide/svelte/icons/gauge';
 import Droplets from '@lucide/svelte/icons/droplets';
@@ -16,11 +25,28 @@ import HardDrive from '@lucide/svelte/icons/hard-drive';
 import Activity from '@lucide/svelte/icons/activity';
 
 const ICONS: Record<string, Component<any>> = {
+  // pos duga air
   AWLR: Waves,
+  TMA: Waves,
+  // pos hujan
   ARR: CloudRainWind,
-  'Papan Duga': Ruler,
-  Telemetri: Radio,
-  'Panel Surya': Sun,
+  'Curah Hujan': CloudRainWind,
+  Intensitas: CloudDrizzle,
+  // stasiun klimatologi (AWS)
+  'Suhu Udara': Thermometer,
+  'Suhu Air': Thermometer,
+  Kelembaban: Droplets,
+  'Kecepatan Angin': Wind,
+  'Arah Angin': Compass,
+  'Tekanan Udara': Gauge,
+  'Radiasi Matahari': SunMedium,
+  // pos kualitas air (AWQR)
+  pH: FlaskConical,
+  DO: Droplet,
+  Kekeruhan: GlassWater,
+  TDS: TestTube,
+  DHL: Zap,
+  // bendungan / irigasi / sumur / O&P
   Piezometer: Gauge,
   'V-Notch': Droplets,
   Inklinometer: MoveDiagonal,
@@ -30,6 +56,8 @@ const ICONS: Record<string, Component<any>> = {
   Settlement: Ruler,
   'Water Level Logger': HardDrive,
   'Sensor Kondisi': Activity,
+  // health
+  'Panel Surya': Sun,
 };
 
 export function instrumentIcon(type: string): Component<any> {

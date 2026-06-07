@@ -14,7 +14,7 @@
   import InstrumentCard from '../panels/InstrumentCard.svelte';
 
   import { data, selected, closeDetail, clock } from '../../stores';
-  import { KIND_LABEL, STATUS } from '../../status';
+  import { KIND_LABEL, POS_TIPE_LABEL, STATUS } from '../../status';
   import { instrumentIcon, INSTRUMENT_STATUS } from '../../instruments';
   import { irigasiRatio } from '../../data/derive';
   import { num, relTime, hhmm, fullDate } from '../../format';
@@ -51,14 +51,16 @@
     return found ? { kind: ref.kind, item: found } : null;
   });
 
-  const primary = $derived(
-    asset ? (asset.item.instruments.find((i) => i.primary) ?? asset.item.instruments[0]) : null,
-  );
+  // alat ukur telemetri vs indikator kesehatan stasiun (catu daya)
+  const sensors = $derived(asset ? asset.item.instruments.filter((i) => i.category !== 'health') : []);
+  const healthItems = $derived(asset ? asset.item.instruments.filter((i) => i.category === 'health') : []);
+
+  const primary = $derived(sensors.find((i) => i.primary) ?? sensors[0] ?? null);
   const series = $derived(primary ? lastN(primary.history, period) : []);
   const st = $derived(stats(series.map((p) => p.v)));
   const readings = $derived([...series].slice(-12).reverse());
 
-  const online = $derived(asset ? asset.item.instruments.filter((i) => i.status === 'online').length : 0);
+  const online = $derived(sensors.filter((i) => i.status === 'online').length);
 </script>
 
 {#if asset && primary}
@@ -72,7 +74,7 @@
       <div class="h-6 w-px bg-line"></div>
       <div class="min-w-0">
         <div class="text-[10px] font-semibold uppercase tracking-widest text-accent-bright">
-          {KIND_LABEL[a.kind]}
+          {a.kind === 'pos' ? POS_TIPE_LABEL[(a.item as PosHidrologi).tipe] : KIND_LABEL[a.kind]}
         </div>
         <h2 class="truncate text-[18px] font-semibold leading-tight text-ink-strong">
           {a.item.name}
@@ -83,7 +85,7 @@
           <MapPin size={12} />{num(a.item.lat, 3)}, {num(a.item.lng, 3)}
         </span>
         <span class="flex items-center gap-1">
-          <Cpu size={12} />{online}/{a.item.instruments.length} alat online
+          <Cpu size={12} />{online}/{sensors.length} alat online
         </span>
         <span>Pembaruan {relTime('updatedAt' in a.item ? a.item.updatedAt : a.item.inspeksi, $clock)}</span>
         <StatusBadge status={a.item.status} pulse={a.item.status !== 'normal'} />
@@ -106,18 +108,22 @@
       <div class="lg:col-span-2">
         {#if a.kind === 'pos'}
           {@const p = a.item as PosHidrologi}
-          <Panel title="Tinggi Muka Air" subtitle="Sungai {p.river} · {period} jam" icon={ChartColumn} accent>
+          <Panel title={p.param.label} subtitle="{p.river ?? POS_TIPE_LABEL[p.tipe]} · {period} jam" icon={ChartColumn} accent>
             <MiniChart
-              points={lastN(p.historyTMA, period)}
+              points={lastN(p.history, period)}
               height={230}
-              color="#4f9bee"
-              unit="m"
-              digits={2}
-              thresholds={[
-                { value: p.thresholds.waspada, color: STATUS.waspada.color, label: 'Waspada' },
-                { value: p.thresholds.siaga, color: STATUS.siaga.color, label: 'Siaga' },
-                { value: p.thresholds.awas, color: STATUS.awas.color, label: 'Awas' },
-              ]}
+              color={p.tipe === 'hujan' ? '#c9a227' : '#4f9bee'}
+              unit={p.param.unit}
+              digits={p.param.digits}
+              bars={p.tipe === 'hujan'}
+              yMin={p.tipe === 'hujan' ? 0 : undefined}
+              thresholds={p.thresholds
+                ? [
+                    { value: p.thresholds.waspada, color: STATUS.waspada.color, label: 'Waspada' },
+                    { value: p.thresholds.siaga, color: STATUS.siaga.color, label: 'Siaga' },
+                    { value: p.thresholds.awas, color: STATUS.awas.color, label: 'Awas' },
+                  ]
+                : []}
             />
           </Panel>
         {:else if a.kind === 'bendungan'}
@@ -223,21 +229,25 @@
       </Panel>
     </div>
 
-    <!-- secondary chart for pos (rainfall) -->
-    {#if a.kind === 'pos'}
-      {@const p = a.item as PosHidrologi}
-      <Panel title="Curah Hujan" subtitle="{period} jam" icon={ChartColumn}>
-        <MiniChart points={lastN(p.historyHujan, period)} height={150} color="#c9a227" unit="mm" digits={0} yMin={0} bars />
-      </Panel>
-    {/if}
-
     <!-- INSTRUMENTS -->
-    <Panel title="Instrumen Terpasang" subtitle="{a.item.instruments.length} alat · {online} online" icon={Cpu} accent>
+    <Panel title="Instrumen Terpasang" subtitle="{sensors.length} alat telemetri · {online} online" icon={Cpu} accent>
       <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
-        {#each a.item.instruments as it (it.id)}
+        {#each sensors as it (it.id)}
           <InstrumentCard inst={it} />
         {/each}
       </div>
+      {#if healthItems.length}
+        <div class="mt-3 border-t border-line-soft pt-3">
+          <div class="mb-2 text-[10px] font-semibold uppercase tracking-wide text-ink-dim">
+            Kesehatan Stasiun
+          </div>
+          <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+            {#each healthItems as it (it.id)}
+              <InstrumentCard inst={it} />
+            {/each}
+          </div>
+        </div>
+      {/if}
     </Panel>
 
     <!-- readings table + gates/pintu -->
@@ -273,7 +283,7 @@
 
       <Panel title="Status Alat" icon={Cpu}>
         <div class="space-y-2">
-          {#each a.item.instruments as it (it.id)}
+          {#each sensors as it (it.id)}
             {@const Icon = instrumentIcon(it.type)}
             {@const meta = INSTRUMENT_STATUS[it.status]}
             <div class="flex items-center gap-2.5">

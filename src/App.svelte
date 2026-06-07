@@ -5,6 +5,8 @@
   import DetailDrawer from './lib/components/panels/DetailDrawer.svelte';
   import WallView from './lib/components/views/WallView.svelte';
   import AssetDetailPage from './lib/components/views/AssetDetailPage.svelte';
+  import LoginView from './lib/components/views/LoginView.svelte';
+  import LogoutModal from './lib/components/ui/LogoutModal.svelte';
 
   import OverviewModule from './lib/components/modules/OverviewModule.svelte';
   import HidrologiModule from './lib/components/modules/HidrologiModule.svelte';
@@ -15,6 +17,7 @@
 
   import { mode, activeModule, selected, startSimulation } from './lib/stores';
   import { startRouter } from './lib/router';
+  import { auth } from './lib/auth';
   import type { ModuleKey } from './lib/types';
 
   const MODULES: Record<ModuleKey, any> = {
@@ -38,35 +41,40 @@
   });
 </script>
 
-<div class="flex h-screen flex-col overflow-hidden">
-  {#if $mode === 'wall'}
-    <!-- Mode Layar Dinding: videowall full-screen tanpa TopBar -->
-    <main class="min-h-0 flex-1 overflow-hidden">
-      <WallView />
-    </main>
-    <DetailDrawer />
-  {:else if $selected}
-    <TopBar />
-    <main class="min-h-0 flex-1 overflow-y-auto">
-      <div class="mx-auto max-w-[1700px] p-3 sm:p-4">
-        {#key $selected.kind + $selected.id}
-          <div class="fade-up">
-            <AssetDetailPage />
-          </div>
-        {/key}
-      </div>
-    </main>
-  {:else}
-    <TopBar />
-    <TabNav />
-    <main class="min-h-0 flex-1 overflow-y-auto">
-      <div class="mx-auto max-w-[1700px] p-3 sm:p-4">
-        {#key $activeModule}
-          <div class="fade-up">
-            <Current />
-          </div>
-        {/key}
-      </div>
-    </main>
-  {/if}
-</div>
+{#if !$auth}
+  <LoginView />
+{:else}
+  <div class="flex h-screen flex-col overflow-hidden">
+    {#if $mode === 'wall'}
+      <!-- Mode Layar Dinding: videowall full-screen tanpa TopBar -->
+      <main class="min-h-0 flex-1 overflow-hidden">
+        <WallView />
+      </main>
+      <DetailDrawer />
+    {:else if $selected}
+      <TopBar />
+      <main class="min-h-0 flex-1 overflow-y-auto">
+        <div class="mx-auto max-w-[1700px] p-3 sm:p-4">
+          {#key $selected.kind + $selected.id}
+            <div class="fade-up">
+              <AssetDetailPage />
+            </div>
+          {/key}
+        </div>
+      </main>
+    {:else}
+      <TopBar />
+      <TabNav />
+      <main class="min-h-0 flex-1 overflow-y-auto">
+        <div class="mx-auto max-w-[1700px] p-3 sm:p-4">
+          {#key $activeModule}
+            <div class="fade-up">
+              <Current />
+            </div>
+          {/key}
+        </div>
+      </main>
+    {/if}
+  </div>
+  <LogoutModal />
+{/if}

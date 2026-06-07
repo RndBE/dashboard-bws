@@ -7,6 +7,7 @@ import type {
   Instrument,
   MapMarker,
   ModuleKey,
+  PosTipe,
   Siaga,
 } from './types';
 import { STATUS, worst } from './status';
@@ -58,6 +59,19 @@ export const statusCounts = derived(markers, ($m) => {
 });
 
 // ---------- Marker assembly ----------
+/** jenis instrumen telemetri unik pada sebuah aset (urutan kemunculan; indikator kesehatan dikecualikan) */
+function instrTypes(insts: Instrument[]): string[] {
+  return [...new Set(insts.filter((i) => i.category !== 'health').map((i) => i.type))];
+}
+
+/** akronim logger per tipe pos — dipakai sebagai jenis instrumen untuk filter peta */
+const POS_LOGGER: Record<PosTipe, string> = {
+  'duga-air': 'AWLR',
+  hujan: 'ARR',
+  klimatologi: 'AWS',
+  kualitas: 'AWQR',
+};
+
 function buildMarkers($d: DashboardData): MapMarker[] {
   const out: MapMarker[] = [];
   for (const p of $d.pos)
@@ -68,8 +82,9 @@ function buildMarkers($d: DashboardData): MapMarker[] {
       lat: p.lat,
       lng: p.lng,
       status: p.status,
-      primaryLabel: 'TMA',
-      primaryValue: `${num(p.tma, 2)} m`,
+      primaryLabel: p.param.label,
+      primaryValue: `${num(p.param.value, p.param.digits)} ${p.param.unit}`,
+      instrumentTypes: [POS_LOGGER[p.tipe]],
     });
   for (const b of $d.bendungan)
     out.push({
@@ -81,6 +96,7 @@ function buildMarkers($d: DashboardData): MapMarker[] {
       status: b.status,
       primaryLabel: 'Elevasi',
       primaryValue: `${num(b.elevasi, 2)} m`,
+      instrumentTypes: instrTypes(b.instruments),
     });
   for (const d of $d.irigasi)
     out.push({
@@ -92,6 +108,7 @@ function buildMarkers($d: DashboardData): MapMarker[] {
       status: d.status,
       primaryLabel: 'Pemenuhan',
       primaryValue: `${num(irigasiRatio(d) * 100, 0)}%`,
+      instrumentTypes: instrTypes(d.instruments),
     });
   for (const s of $d.sumur)
     out.push({
@@ -103,6 +120,7 @@ function buildMarkers($d: DashboardData): MapMarker[] {
       status: s.status,
       primaryLabel: 'Muka air tanah',
       primaryValue: `${num(s.muka, 2)} m`,
+      instrumentTypes: instrTypes(s.instruments),
     });
   for (const a of $d.op)
     out.push({
@@ -114,6 +132,7 @@ function buildMarkers($d: DashboardData): MapMarker[] {
       status: a.status,
       primaryLabel: 'Kondisi',
       primaryValue: `${num(a.kondisi, 0)}%`,
+      instrumentTypes: instrTypes(a.instruments),
     });
   return out;
 }
@@ -188,8 +207,8 @@ function tickInstruments(
 function alertMessage(kind: AssetKind, name: string, level: Siaga): string {
   if (kind === 'pos')
     return level === 'awas'
-      ? `${name} — TMA melampaui ambang banjir`
-      : `${name} — TMA naik (${STATUS[level].label})`;
+      ? `${name} — melampaui ambang (Awas)`
+      : `${name} — status ${STATUS[level].label}`;
   if (kind === 'bendungan')
     return level === 'awas'
       ? `${name} — elevasi mencapai muka air banjir`
@@ -243,18 +262,28 @@ function step(prev: DashboardData, now: number): DashboardData {
 
   const pos = prev.pos.map((p) => {
     const storm = p.id === stormPos ? 0.5 : 0;
-    const tma = nudge(p.tma + storm, 0.07, 0.2, 5.2, p.thresholds.waspada - 0.6);
-    const debit = nudge(p.debit * (tma / p.tma || 1), 4, 5, 600);
-    const hujan = nudge(p.hujan + (storm ? 8 : 0), 2.5, 0, 60, 2);
+    const cur = p.param.value;
+    // nudge parameter utama sesuai tipe
+    const nextPrimary =
+      p.tipe === 'duga-air'
+        ? nudge(cur + storm, 0.07, 0.2, 5.2, (p.thresholds?.waspada ?? 2.5) - 0.6)
+        : p.tipe === 'hujan'
+          ? nudge(cur + (storm ? 8 : 0), 2.5, 0, 120, 2)
+          : p.tipe === 'klimatologi'
+            ? nudge(cur, 0.4, 18, 36)
+            : nudge(cur, 0.05, 5.5, 9); // kualitas: pH
+    const instruments = tickInstruments(p.instruments, nextPrimary, now);
+    const prim = instruments.find((i) => i.primary) ?? instruments[0];
     const np = {
       ...p,
-      tma,
-      debit: r2(debit),
-      hujan: r2(hujan),
+      param: { ...p.param, value: prim.value },
+      history: prim.history,
+      debit:
+        p.debit !== undefined
+          ? r2(nudge(p.debit * (nextPrimary / (cur || 1)), 4, 5, 600))
+          : undefined,
       updatedAt: now,
-      historyTMA: tail(p.historyTMA, tma, now),
-      historyHujan: tail(p.historyHujan, hujan, now),
-      instruments: tickInstruments(p.instruments, tma, now),
+      instruments,
     };
     np.status = posStatus(np);
     reconcileAlert(alerts, 'pos', p.id, p.name, p.status, np.status, now);

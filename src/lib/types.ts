@@ -24,7 +24,7 @@ export type InstrumentStatus = 'online' | 'offline' | 'maintenance';
 export interface Instrument {
   id: string;
   name: string;
-  /** jenis alat, mis. AWLR, ARR, Piezometer, V-Notch, CCTV */
+  /** jenis alat, mis. AWLR, ARR, AWS, AWQR, Piezometer, V-Notch, CCTV */
   type: string;
   status: InstrumentStatus;
   value: number;
@@ -34,27 +34,43 @@ export interface Instrument {
   /** sensor utama yang nilainya mencerminkan metrik aset */
   primary?: boolean;
   valueDigits?: number;
+  /** 'telemetry' = alat ukur, 'health' = indikator kesehatan stasiun (catu daya). default telemetry */
+  category?: 'telemetry' | 'health';
 }
 
-/** Pos Duga Air / stasiun hidrologi */
+/** Jenis pos berdasarkan logger/fungsi (satu pos satu logger) */
+export type PosTipe = 'duga-air' | 'hujan' | 'klimatologi' | 'kualitas';
+
+/** Parameter utama sebuah pos (untuk penanda peta & grafik tren) */
+export interface PosParam {
+  /** kunci analisa, mis. 'tma' | 'hujan' | 'suhu' | 'ph' */
+  key: string;
+  /** label singkat, mis. 'TMA', 'Suhu Udara' */
+  label: string;
+  value: number;
+  unit: string;
+  digits: number;
+}
+
+/** Pos hidrologi/telemetri — tipe menentukan logger & parameter terpasang */
 export interface PosHidrologi {
   id: string;
   name: string;
-  river: string;
+  tipe: PosTipe;
+  /** sungai (relevan utk pos duga air & pos hujan) */
+  river?: string;
   lat: number;
   lng: number;
-  /** tinggi muka air, meter */
-  tma: number;
-  /** debit, m³/s */
-  debit: number;
-  /** curah hujan 1 jam, mm */
-  hujan: number;
-  /** ambang TMA untuk eskalasi siaga (meter) */
-  thresholds: { waspada: number; siaga: number; awas: number };
+  /** parameter utama (mengikuti sensor utama logger) */
+  param: PosParam;
+  /** histori parameter utama */
+  history: SeriesPoint[];
+  /** ambang eskalasi siaga — hanya tipe yang berbasis ambang (duga-air, hujan) */
+  thresholds?: { waspada: number; siaga: number; awas: number };
+  /** debit turunan rating curve — hanya pos duga air */
+  debit?: number;
   status: Siaga;
   updatedAt: number;
-  historyTMA: SeriesPoint[];
-  historyHujan: SeriesPoint[];
   instruments: Instrument[];
 }
 
@@ -177,6 +193,8 @@ export interface MapMarker {
   status: Siaga;
   primaryLabel: string;
   primaryValue: string;
+  /** jenis instrumen terpasang (unik), mis. ['AWLR','ARR'] — untuk filter peta */
+  instrumentTypes: string[];
 }
 
 /** Referensi untuk membuka panel detail */

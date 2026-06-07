@@ -18,18 +18,20 @@
   import { shortDelta } from '../../series';
 
   const d = $derived($data);
+  // EWS banjir hanya menyangkut Pos Duga Air (punya TMA + ambang)
+  const dugaAir = $derived(d.pos.filter((p) => p.tipe === 'duga-air'));
   const ews = $derived(
-    [...d.pos].sort((a, b) => STATUS[b.status].weight - STATUS[a.status].weight),
+    [...dugaAir].sort((a, b) => STATUS[b.status].weight - STATUS[a.status].weight),
   );
-  const siagaCount = $derived(d.pos.filter((p) => p.status !== 'normal').length);
-  const debitPeak = $derived(Math.max(...d.pos.map((p) => p.debit)));
+  const siagaCount = $derived(dugaAir.filter((p) => p.status !== 'normal').length);
+  const debitPeak = $derived(Math.max(0, ...dugaAir.map((p) => p.debit ?? 0)));
   const perbaikan = $derived(d.op.filter((a) => a.kondisi < 70).length);
   const progresAvg = $derived(d.op.reduce((s, a) => s + a.progres, 0) / d.op.length);
 </script>
 
 <div class="flex flex-col gap-3">
   <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-    <KpiCard label="Pos siaga+" value={String(siagaCount)} unit="dari {d.pos.length}" icon={Siren} accent />
+    <KpiCard label="Pos siaga+" value={String(siagaCount)} unit="dari {dugaAir.length}" icon={Siren} accent />
     <KpiCard label="Debit puncak" value={num(debitPeak, 0)} unit="m³/s" icon={Activity} />
     <KpiCard label="Aset perlu perbaikan" value={String(perbaikan)} unit="aset" icon={HardHat} />
     <KpiCard label="Progres O&P" value={num(progresAvg, 0)} unit="%" icon={Wrench} />
@@ -46,24 +48,24 @@
           </div>
           <div class="flex-1">
             <LevelBar
-              value={p.tma}
+              value={p.param.value}
               min={0}
-              max={p.thresholds.awas + 0.6}
+              max={p.thresholds!.awas + 0.6}
               color={STATUS[p.status].color}
               height={8}
               markers={[
-                { value: p.thresholds.waspada, color: STATUS.waspada.color, label: 'Waspada' },
-                { value: p.thresholds.siaga, color: STATUS.siaga.color, label: 'Siaga' },
-                { value: p.thresholds.awas, color: STATUS.awas.color, label: 'Awas' },
+                { value: p.thresholds!.waspada, color: STATUS.waspada.color, label: 'Waspada' },
+                { value: p.thresholds!.siaga, color: STATUS.siaga.color, label: 'Siaga' },
+                { value: p.thresholds!.awas, color: STATUS.awas.color, label: 'Awas' },
               ]}
             />
           </div>
           <div class="w-16 text-right">
-            <div class="font-mono text-[14px] font-semibold tnum" style="color:{STATUS[p.status].color}">{num(p.tma, 2)}</div>
+            <div class="font-mono text-[14px] font-semibold tnum" style="color:{STATUS[p.status].color}">{num(p.param.value, 2)}</div>
             <div class="text-[9px] text-ink-dim">m</div>
           </div>
           <div class="hidden w-20 justify-end sm:flex">
-            <Delta delta={shortDelta(p.historyTMA)} unit=" m" digits={2} badWhen="up" />
+            <Delta delta={shortDelta(p.history)} unit=" m" digits={2} badWhen="up" />
           </div>
           <StatusBadge status={p.status} size="xs" dot={false} />
         </button>

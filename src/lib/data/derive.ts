@@ -2,6 +2,7 @@
 import type {
   Bendungan,
   DaerahIrigasi,
+  Instrument,
   PosHidrologi,
   Siaga,
   SumurPantau,
@@ -9,8 +10,40 @@ import type {
 } from '../types';
 import { siagaFromRising } from '../status';
 
-export function posStatus(p: Pick<PosHidrologi, 'tma' | 'thresholds'>): Siaga {
-  return siagaFromRising(p.tma, p.thresholds);
+const SIAGA_ORDER: Siaga[] = ['normal', 'waspada', 'siaga', 'awas'];
+
+function readVal(insts: Instrument[], type: string): number | undefined {
+  return insts.find((i) => i.type === type)?.value;
+}
+
+/** status mutu air pos kualitas (pH, DO, kekeruhan) → dipetakan ke skema siaga */
+export function kualitasStatus(insts: Instrument[]): Siaga {
+  let level = 0;
+  const ph = readVal(insts, 'pH');
+  if (ph !== undefined) {
+    const dev = Math.max(0, 6.5 - ph, ph - 8.5);
+    level = Math.max(level, dev > 1.5 ? 3 : dev > 0.8 ? 2 : dev > 0.3 ? 1 : 0);
+  }
+  const dox = readVal(insts, 'DO');
+  if (dox !== undefined) level = Math.max(level, dox < 2 ? 3 : dox < 3 ? 2 : dox < 4 ? 1 : 0);
+  const ntu = readVal(insts, 'Kekeruhan');
+  if (ntu !== undefined) level = Math.max(level, ntu > 100 ? 3 : ntu > 50 ? 2 : ntu > 25 ? 1 : 0);
+  return SIAGA_ORDER[level];
+}
+
+export function posStatus(
+  p: Pick<PosHidrologi, 'tipe' | 'param' | 'thresholds' | 'instruments'>,
+): Siaga {
+  switch (p.tipe) {
+    case 'duga-air':
+    case 'hujan':
+      return p.thresholds ? siagaFromRising(p.param.value, p.thresholds) : 'normal';
+    case 'kualitas':
+      return kualitasStatus(p.instruments);
+    case 'klimatologi':
+    default:
+      return 'normal';
+  }
 }
 
 export function bendunganStatus(

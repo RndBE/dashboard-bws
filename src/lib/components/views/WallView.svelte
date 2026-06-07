@@ -16,8 +16,10 @@
   import Minimize from '@lucide/svelte/icons/minimize';
   import LogOut from '@lucide/svelte/icons/log-out';
   import type { Component, Snippet } from 'svelte';
+  import type { AssetKind } from '../../types';
 
   import BasinMap from '../map/BasinMap.svelte';
+  import WallMapControls from '../map/WallMapControls.svelte';
   import Logo from '../layout/Logo.svelte';
   import DamIcon from '../icons/DamIcon.svelte';
   import Sparkline from '../ui/Sparkline.svelte';
@@ -31,6 +33,7 @@
     statusCounts,
     activeAlerts,
     openDetail,
+    markers,
   } from '../../stores';
 
   // ---------- kontrol layar dinding ----------
@@ -48,26 +51,41 @@
     isFullscreen = !!document.fullscreenElement;
   }
 
-  function logout() {
-    if (confirm('Keluar dari Pusat Kendali? Sesi akan ditutup.')) {
-      // Belum ada sistem autentikasi — muat ulang sebagai simulasi keluar sesi.
-      location.reload();
-    }
-  }
+  import { requestLogout } from '../../auth';
   import { irigasiRatio } from '../../data/derive';
   import { SIAGA_ORDER, STATUS, KIND_LABEL } from '../../status';
   import { clockTime, fullDate, num, relTime, signed } from '../../format';
 
   const d = $derived($data);
 
+  // ---------- filter peta (layer aset & instrumen) ----------
+  let hiddenKinds = $state<AssetKind[]>([]);
+  let hiddenInstruments = $state<string[]>([]);
+  function toggleKind(k: AssetKind) {
+    hiddenKinds = hiddenKinds.includes(k)
+      ? hiddenKinds.filter((x) => x !== k)
+      : [...hiddenKinds, k];
+  }
+  function toggleInstrument(t: string) {
+    hiddenInstruments = hiddenInstruments.includes(t)
+      ? hiddenInstruments.filter((x) => x !== t)
+      : [...hiddenInstruments, t];
+  }
+  function resetFilters() {
+    hiddenKinds = [];
+    hiddenInstruments = [];
+  }
+
   const agg = $derived.by(() => {
-    const hujan = d.pos.reduce((s, p) => s + p.hujan, 0) / d.pos.length;
-    const peak = d.pos.reduce((a, b) => (b.tma > a.tma ? b : a));
+    const dugaAir = d.pos.filter((p) => p.tipe === 'duga-air');
+    const hujanPos = d.pos.filter((p) => p.tipe === 'hujan');
+    const hujan = hujanPos.length ? hujanPos.reduce((s, p) => s + p.param.value, 0) / hujanPos.length : 0;
+    const peak = dugaAir.length ? dugaAir.reduce((a, b) => (b.param.value > a.param.value ? b : a)) : null;
     const sumVol = d.bendungan.reduce((s, b) => s + b.volume, 0);
     const sumKap = d.bendungan.reduce((s, b) => s + b.kapasitas, 0);
     const ir = (d.irigasi.reduce((s, x) => s + irigasiRatio(x), 0) / d.irigasi.length) * 100;
     const siaga = d.pos.filter((p) => p.status !== 'normal').length;
-    const debitTotal = d.pos.reduce((s, p) => s + p.debit, 0);
+    const debitTotal = dugaAir.reduce((s, p) => s + (p.debit ?? 0), 0);
     return { hujan, peak, tampungan: (sumVol / sumKap) * 100, ir, siaga, debitTotal, sumVol, sumKap };
   });
 
@@ -77,9 +95,11 @@
     return a[a.length - 1] - a[Math.max(0, a.length - 1 - back)];
   }
   const hujanAvgSeries = $derived.by(() => {
-    const n = Math.min(...d.pos.map((p) => p.historyHujan.length));
+    const hp = d.pos.filter((p) => p.tipe === 'hujan');
+    if (!hp.length) return [];
+    const n = Math.min(...hp.map((p) => p.history.length));
     const out: number[] = [];
-    for (let i = 0; i < n; i++) out.push(d.pos.reduce((s, p) => s + p.historyHujan[i].v, 0) / d.pos.length);
+    for (let i = 0; i < n; i++) out.push(hp.reduce((s, p) => s + p.history[i].v, 0) / hp.length);
     return out;
   });
 
@@ -97,9 +117,9 @@
     bars?: boolean;
   }
   const kpis = $derived<Kpi[]>([
-    { label: 'Hujan rata-rata', value: num(agg.hujan, 1), unit: 'mm/jam', icon: CloudRainWind, color: '#c9a227', series: hujanAvgSeries, delta: arrDelta(hujanAvgSeries), badWhen: 'up', digits: 1, bars: true },
-    { label: 'TMA puncak', value: num(agg.peak.tma, 2), unit: 'm', icon: Waves, color: STATUS[agg.peak.status].color, series: agg.peak.historyTMA.map((p) => p.v), delta: arrDelta(agg.peak.historyTMA.map((p) => p.v)), badWhen: 'up', digits: 2 },
-    { label: 'Debit total', value: num(agg.debitTotal, 0), unit: 'm³/s', icon: Activity, color: '#38bdf8', series: agg.peak.historyTMA.map((p) => p.v), delta: 0, badWhen: 'none', digits: 0 },
+    { label: 'Hujan rata-rata', value: num(agg.hujan, 1), unit: 'mm', icon: CloudRainWind, color: '#c9a227', series: hujanAvgSeries, delta: arrDelta(hujanAvgSeries), badWhen: 'up', digits: 1, bars: true },
+    { label: 'TMA puncak', value: num(agg.peak?.param.value ?? 0, 2), unit: 'm', icon: Waves, color: agg.peak ? STATUS[agg.peak.status].color : STATUS.normal.color, series: (agg.peak?.history ?? []).map((p) => p.v), delta: arrDelta((agg.peak?.history ?? []).map((p) => p.v)), badWhen: 'up', digits: 2 },
+    { label: 'Debit total', value: num(agg.debitTotal, 0), unit: 'm³/s', icon: Activity, color: '#38bdf8', series: (agg.peak?.history ?? []).map((p) => p.v), delta: 0, badWhen: 'none', digits: 0 },
     { label: 'Tampungan waduk', value: num(agg.tampungan, 0), unit: '%', icon: DamIcon, color: '#4f9bee', series: d.bendungan[0]?.historyElevasi.map((p) => p.v) ?? [], delta: 0, badWhen: 'none', digits: 0 },
     { label: 'Pemenuhan irigasi', value: num(agg.ir, 0), unit: '%', icon: Sprout, color: agg.ir < 90 ? '#e08a3c' : '#3fb27f', series: d.irigasi[0]?.historyDebit.map((p) => p.v) ?? [], delta: 0, badWhen: 'down', digits: 0 },
   ]);
@@ -107,7 +127,7 @@
   // pos teratas (paling gawat / TMA tertinggi) untuk panel monitoring kiri
   const topPos = $derived(
     [...d.pos]
-      .sort((a, b) => STATUS[b.status].weight - STATUS[a.status].weight || b.tma - a.tma)
+      .sort((a, b) => STATUS[b.status].weight - STATUS[a.status].weight || b.param.value - a.param.value)
       .slice(0, 4),
   );
 
@@ -118,7 +138,7 @@
     const crit = [...d.pos]
       .filter((p) => p.status !== 'normal')
       .sort((a, b) => STATUS[b.status].weight - STATUS[a.status].weight)
-      .map((p) => `${STATUS[p.status].label.toUpperCase()} · ${p.name} — TMA ${num(p.tma, 2)} m / debit ${num(p.debit, 0)} m³/s`);
+      .map((p) => `${STATUS[p.status].label.toUpperCase()} · ${p.name} — ${p.param.label} ${num(p.param.value, p.param.digits)} ${p.param.unit}${p.debit !== undefined ? ` / debit ${num(p.debit, 0)} m³/s` : ''}`);
     const dams = d.bendungan.map(
       (b) => `${b.name} — elevasi ${num(b.elevasi, 2)} mdpl · tampungan ${num((b.volume / b.kapasitas) * 100, 0)}%`,
     );
@@ -140,7 +160,14 @@
 <div class="relative h-full w-full overflow-hidden bg-bg">
   <!-- ════════ PETA FULL-BLEED (lapisan dasar) ════════ -->
   <div class="absolute inset-0 z-0">
-    <BasinMap interactive={false} wall autoTour zoom={10} />
+    <BasinMap
+      interactive={false}
+      wall
+      autoTour
+      zoom={10}
+      {hiddenKinds}
+      {hiddenInstruments}
+    />
   </div>
   <div class="wall-vignette"></div>
   <div class="wall-scanline"></div>
@@ -153,8 +180,18 @@
   ></div>
   <!-- label HUD peta (di area tengah-atas, di antara header & dock) -->
   <div class="pointer-events-none absolute left-1/2 top-[92px] z-[405] -translate-x-1/2 font-mono text-[9.5px] uppercase tracking-[0.2em] text-ink-dim/70">
-    Peta Operasional · WS Cidanau–Cigaru · Auto-tour aktif
+    Peta Operasional · Auto-tour aktif
   </div>
+
+  <!-- kontrol layer & legenda peta (collapsible) -->
+  <WallMapControls
+    markers={$markers}
+    {hiddenKinds}
+    {hiddenInstruments}
+    {toggleKind}
+    {toggleInstrument}
+    reset={resetFilters}
+  />
 
   <!-- ════════ LAPISAN HUD (overlay mengambang) ════════ -->
   <!-- ════════ HEADER BAR (mengambang) — tiga zona berkelompok ════════ -->
@@ -166,8 +203,7 @@
       <Logo height={30} />
       <div class="leading-tight">
         <div class="text-[9px] font-semibold uppercase tracking-[0.26em] text-pu-bright">Pusat Kendali Operasi</div>
-        <div class="text-[16.5px] font-semibold tracking-tight text-ink-strong">Balai Wilayah Sungai Nusa Barat</div>
-        <div class="mt-0.5 text-[9.5px] uppercase tracking-[0.14em] text-ink-dim">WS Cidanau–Cigaru</div>
+        <div class="text-[16.5px] font-semibold tracking-tight text-ink-strong">STESY Command Center</div>
       </div>
     </div>
 
@@ -237,7 +273,7 @@
         </button>
 
         <button
-          onclick={logout}
+          onclick={requestLogout}
           title="Keluar sesi"
           class="grid h-9 w-9 place-items-center rounded-lg border border-awas/40 text-awas/90 transition-colors hover:bg-awas/15 hover:text-awas"
         >
@@ -294,14 +330,14 @@
               <span class="h-2 w-2 shrink-0 rounded-full" style="background:{STATUS[p.status].color}"></span>
               <div class="min-w-0 flex-1">
                 <div class="truncate text-[11.5px] font-medium text-ink-strong">{p.name}</div>
-                <div class="text-[9.5px] text-ink-dim">{p.river}</div>
+                <div class="text-[9.5px] text-ink-dim">{p.river ?? p.param.label}</div>
               </div>
               <div class="h-7 w-16 shrink-0">
-                <Sparkline points={p.historyTMA.map((x) => x.v)} color={STATUS[p.status].color} height={28} dot={false} />
+                <Sparkline points={p.history.map((x) => x.v)} color={STATUS[p.status].color} height={28} dot={false} />
               </div>
               <div class="w-12 shrink-0 text-right">
-                <div class="font-mono text-[13px] font-semibold tnum" style="color:{STATUS[p.status].color}">{num(p.tma, 2)}</div>
-                <div class="text-[9px] text-ink-dim">m</div>
+                <div class="font-mono text-[13px] font-semibold tnum" style="color:{STATUS[p.status].color}">{num(p.param.value, p.param.digits)}</div>
+                <div class="text-[9px] text-ink-dim">{p.param.unit}</div>
               </div>
             </button>
           {/each}

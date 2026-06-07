@@ -3,7 +3,10 @@
   import { activeModule } from '../../stores';
 </script>
 
-<nav class="flex items-center gap-1 overflow-x-auto border-b border-line bg-surface/60 px-3">
+<nav class="border-b border-line bg-surface/60">
+  <div
+    class="mx-auto flex w-full max-w-[1700px] items-center gap-1 overflow-x-auto px-3 sm:px-4"
+  >
   {#each NAV as item}
     {@const active = $activeModule === item.key}
     <button
@@ -25,4 +28,5 @@
       {/if}
     </button>
   {/each}
+  </div>
 </nav>

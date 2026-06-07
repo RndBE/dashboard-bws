@@ -6,7 +6,7 @@
   import { statusColor, STATUS } from '../../status';
   import { KIND_LABEL } from '../../status';
   import { MAP_CENTER, MAP_ZOOM } from '../../data/seed';
-  import type { MapMarker } from '../../types';
+  import type { AssetKind, MapMarker } from '../../types';
 
   interface Props {
     overlay?: Snippet;
@@ -16,6 +16,10 @@
     autoTour?: boolean;
     /** kelas tambahan utk styling khusus dinding (mis. sembunyikan kontrol) */
     wall?: boolean;
+    /** jenis aset yang disembunyikan dari peta (filter layer) */
+    hiddenKinds?: AssetKind[];
+    /** jenis instrumen yang dimatikan — aset tampil bila punya ≥1 instrumen aktif */
+    hiddenInstruments?: string[];
   }
   let {
     overlay,
@@ -23,7 +27,19 @@
     interactive = true,
     autoTour = false,
     wall = false,
+    hiddenKinds = [],
+    hiddenInstruments = [],
   }: Props = $props();
+
+  /** lolos filter bila kategori aset aktif & punya ≥1 instrumen aktif */
+  function pass(m: MapMarker): boolean {
+    if (hiddenKinds.includes(m.kind)) return false;
+    if (hiddenInstruments.length) {
+      const types = m.instrumentTypes ?? [];
+      if (!types.some((t) => !hiddenInstruments.includes(t))) return false;
+    }
+    return true;
+  }
 
   let el: HTMLDivElement;
   let map: L.Map | undefined;
@@ -60,6 +76,14 @@
     for (const m of ms) {
       const existing = reg.get(m.id);
       const focused = focusedId === m.id;
+      // filter: sembunyikan marker yang tak lolos (kategori / instrumen)
+      if (!pass(m)) {
+        if (existing) {
+          layer.removeLayer(existing.marker);
+          reg.delete(m.id);
+        }
+        continue;
+      }
       if (!existing) {
         const marker = L.marker([m.lat, m.lng], { icon: iconFor(m, focused) })
           .bindTooltip(tipFor(m), {
@@ -82,12 +106,13 @@
     }
   }
 
-  /** urutan tur: pos siaga+ dulu (terburuk lebih dulu), lalu sisanya */
+  /** urutan tur: pos siaga+ dulu (terburuk lebih dulu), lalu sisanya — hanya yang tampil */
   function tourOrder(ms: MapMarker[]): MapMarker[] {
+    const vis = ms.filter(pass);
     const sev = (m: MapMarker) => STATUS[m.status].weight;
-    const critical = ms.filter((m) => m.status !== 'normal').sort((a, b) => sev(b) - sev(a));
-    const rest = ms.filter((m) => m.status === 'normal');
-    return critical.length ? [...critical, ...rest.slice(0, 3)] : ms;
+    const critical = vis.filter((m) => m.status !== 'normal').sort((a, b) => sev(b) - sev(a));
+    const rest = vis.filter((m) => m.status === 'normal');
+    return critical.length ? [...critical, ...rest.slice(0, 3)] : vis;
   }
 
   onMount(() => {
@@ -156,6 +181,13 @@
       map = undefined;
       reg.clear();
     };
+  });
+
+  // re-filter marker saat prop visibilitas berubah (toggle layer / instrumen)
+  $effect(() => {
+    void hiddenKinds;
+    void hiddenInstruments;
+    if (map) sync(latest);
   });
 </script>
 

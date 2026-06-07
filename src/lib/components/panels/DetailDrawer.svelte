@@ -8,7 +8,7 @@
   import LevelBar from '../ui/LevelBar.svelte';
   import StatusBadge from '../ui/StatusBadge.svelte';
   import { data, selected, closeDetail, clock } from '../../stores';
-  import { KIND_LABEL, STATUS } from '../../status';
+  import { KIND_LABEL, POS_TIPE_LABEL, STATUS } from '../../status';
   import { irigasiRatio } from '../../data/derive';
   import { num, relTime, shortDateTime } from '../../format';
   import type {
@@ -99,26 +99,30 @@
     <div class="flex-1 space-y-3 overflow-y-auto p-4">
       {#if a.kind === 'pos'}
         {@const p = a.item as PosHidrologi}
+        {@const extra = p.instruments.filter((i) => i.category !== 'health' && !i.primary)}
         <div class="grid grid-cols-3 gap-2">
-          {@render metric('TMA', num(p.tma, 2), 'm')}
-          {@render metric('Debit', num(p.debit, 0), 'm³/s')}
-          {@render metric('Hujan', num(p.hujan, 1), 'mm')}
+          {@render metric(p.param.label, num(p.param.value, p.param.digits), p.param.unit)}
+          {#if p.debit !== undefined}{@render metric('Debit', num(p.debit, 0), 'm³/s')}{/if}
+          {#each extra.slice(0, p.debit !== undefined ? 1 : 2) as it (it.id)}
+            {@render metric(it.type, num(it.value, it.valueDigits ?? 1), it.unit)}
+          {/each}
         </div>
-        <Panel title="Tinggi Muka Air · 48 jam" subtitle="Sungai {p.river}">
+        <Panel title="{p.param.label} · 48 jam" subtitle={p.river ?? POS_TIPE_LABEL[p.tipe]}>
           <MiniChart
-            points={p.historyTMA}
-            color="#4f9bee"
-            unit="m"
-            digits={2}
-            thresholds={[
-              { value: p.thresholds.waspada, color: STATUS.waspada.color, label: 'Waspada' },
-              { value: p.thresholds.siaga, color: STATUS.siaga.color, label: 'Siaga' },
-              { value: p.thresholds.awas, color: STATUS.awas.color, label: 'Awas' },
-            ]}
+            points={p.history}
+            color={p.tipe === 'hujan' ? '#c9a227' : '#4f9bee'}
+            unit={p.param.unit}
+            digits={p.param.digits}
+            bars={p.tipe === 'hujan'}
+            yMin={p.tipe === 'hujan' ? 0 : undefined}
+            thresholds={p.thresholds
+              ? [
+                  { value: p.thresholds.waspada, color: STATUS.waspada.color, label: 'Waspada' },
+                  { value: p.thresholds.siaga, color: STATUS.siaga.color, label: 'Siaga' },
+                  { value: p.thresholds.awas, color: STATUS.awas.color, label: 'Awas' },
+                ]
+              : []}
           />
-        </Panel>
-        <Panel title="Curah Hujan · 48 jam">
-          <MiniChart points={p.historyHujan} color="#c9a227" unit="mm" digits={0} yMin={0} bars />
         </Panel>
       {:else if a.kind === 'bendungan'}
         {@const b = a.item as Bendungan}

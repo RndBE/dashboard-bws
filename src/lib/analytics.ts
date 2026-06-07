@@ -190,8 +190,10 @@ export function prepare(
 // Hanya parameter yang punya deret histori yang dapat dianalisa lewat grafik tren.
 export const PARAMS: Record<CategoryKey, ParamDef[]> = {
   pos: [
-    { key: 'tma', label: 'Tinggi Muka Air', unit: 'm', digits: 2, color: '#4f9bee', badWhen: 'up' },
-    { key: 'hujan', label: 'Curah Hujan', unit: 'mm', digits: 1, color: '#c9a227', badWhen: 'up', zeroBased: true },
+    { key: 'tma', label: 'TMA · Pos Duga Air', unit: 'm', digits: 2, color: '#4f9bee', badWhen: 'up' },
+    { key: 'hujan', label: 'Curah Hujan · Pos Hujan', unit: 'mm', digits: 1, color: '#c9a227', badWhen: 'up', zeroBased: true },
+    { key: 'suhu', label: 'Suhu Udara · Klimatologi', unit: '°C', digits: 1, color: '#e08a4f', badWhen: 'none' },
+    { key: 'ph', label: 'pH · Kualitas Air', unit: 'pH', digits: 1, color: '#7c5cff', badWhen: 'none' },
   ],
   bendungan: [
     { key: 'elevasi', label: 'Elevasi Waduk', unit: 'mdpl', digits: 2, color: '#4f9bee', badWhen: 'up' },

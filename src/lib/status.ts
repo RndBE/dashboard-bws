@@ -1,4 +1,4 @@
-import type { Siaga, AssetKind } from './types';
+import type { Siaga, AssetKind, PosTipe } from './types';
 
 export interface StatusMeta {
   key: Siaga;
@@ -80,9 +80,25 @@ export function siagaFromRising(
 }
 
 export const KIND_LABEL: Record<AssetKind, string> = {
-  pos: 'Pos Duga Air',
+  pos: 'Pos Telemetri',
   bendungan: 'Bendungan',
   irigasi: 'Daerah Irigasi',
   sumur: 'Sumur Pantau',
   op: 'Aset O&P',
+};
+
+/** label per tipe pos */
+export const POS_TIPE_LABEL: Record<PosTipe, string> = {
+  'duga-air': 'Pos Duga Air',
+  hujan: 'Pos Hujan',
+  klimatologi: 'Stasiun Klimatologi',
+  kualitas: 'Pos Kualitas Air',
+};
+
+/** akronim logger per tipe pos */
+export const POS_TIPE_LOGGER: Record<PosTipe, string> = {
+  'duga-air': 'AWLR',
+  hujan: 'ARR',
+  klimatologi: 'AWS',
+  kualitas: 'AWQR',
 };
