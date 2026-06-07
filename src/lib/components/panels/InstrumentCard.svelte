@@ -49,6 +49,11 @@
       <div class="mt-1 text-[9.5px] text-ink-dim">
         {offline ? 'Terakhir ' : ''}{relTime(inst.updatedAt, $clock)}
       </div>
+      {#if inst.lokasi}
+        <div class="mt-1 max-w-[180px] truncate text-[9.5px] text-ink-muted">
+          {inst.lokasi}
+        </div>
+      {/if}
     </div>
     <div class="h-9 w-24 shrink-0">
       <Sparkline

@@ -18,6 +18,8 @@ import {
   posStatus,
   sumurStatus,
 } from './derive';
+import { WADUK_BIG } from './bigWadukGeojson';
+import type { BendunganGeoJson, GeoJsonPosition } from '../types';
 
 export const BALAI_NAME = 'STESY Command Center';
 export const MAP_CENTER: [number, number] = [-6.48, 106.16];
@@ -72,6 +74,9 @@ function inst(
     min?: number;
     status?: InstrumentStatus;
     category?: 'telemetry' | 'health';
+    lat?: number;
+    lng?: number;
+    lokasi?: string;
   } = {},
 ): Instrument {
   const digits = opts.digits ?? 1;
@@ -93,6 +98,9 @@ function inst(
     primary: opts.primary,
     valueDigits: digits,
     category: opts.category,
+    lat: opts.lat,
+    lng: opts.lng,
+    lokasi: opts.lokasi,
   };
 }
 
@@ -221,20 +229,125 @@ function buildPos(base: PosSeedBase, now: number): PosHidrologi {
   return pos;
 }
 
+function collectPositions(geojson?: BendunganGeoJson): GeoJsonPosition[] {
+  if (!geojson) return [];
+  const out: GeoJsonPosition[] = [];
+  const walk = (value: unknown) => {
+    if (!Array.isArray(value)) return;
+    if (typeof value[0] === 'number' && typeof value[1] === 'number') {
+      out.push(value as GeoJsonPosition);
+      return;
+    }
+    for (const child of value) walk(child);
+  };
+  for (const feature of geojson.features) walk(feature.geometry.coordinates);
+  return out;
+}
+
+function instrumentUnit(b: { geojson?: BendunganGeoJson }): number {
+  const positions = collectPositions(b.geojson);
+  if (!positions.length) return 0.00027;
+  const lngs = positions.map((p) => p[0]);
+  const lats = positions.map((p) => p[1]);
+  const width = Math.max(...lngs) - Math.min(...lngs);
+  const height = Math.max(...lats) - Math.min(...lats);
+  return Math.max(0.000045, Math.min(0.00027, width / 8, height / 8));
+}
+
+/**
+ * Set lengkap instrumen keamanan bendungan (dam safety), penamaan mengikuti
+ * gaya STESY / Beacon Engineering. Tiap alat diberi posisi sendiri di sekitar
+ * tubuh bendungan agar bisa ditampilkan pada peta sebaran instrumen.
+ *
+ * Penempatan memakai sumbu lokal: `along` = arah memanjang puncak bendungan,
+ * `cross` = arah hulu(+)/hilir(−). 1 unit ≈ ~30 m. Beberapa alat berjumlah
+ * banyak (mis. piezometer & patok geser dipasang per STA).
+ */
 function bendunganInstruments(
-  b: { id: string; elevasi: number; gates: { opening: number }[] },
+  b: {
+    id: string;
+    lat: number;
+    lng: number;
+    elevasi: number;
+    inflow: number;
+    outflow: number;
+    gates: { opening: number }[];
+    geojson?: BendunganGeoJson;
+  },
   now: number,
 ): Instrument[] {
   const avgGate = b.gates.reduce((s, g) => s + g.opening, 0) / b.gates.length;
-  return withFault([
-    inst(b.id, 'AWLR', 'AWLR — Elevasi Waduk', b.elevasi, 'mdpl', now, { primary: true, digits: 2, amp: 1.4, noise: 0.08, min: b.elevasi - 6 }),
-    inst(b.id, 'ARR', 'ARR — Pencatat Hujan', 6 + Math.random() * 16, 'mm', now, { digits: 1, amp: 10, noise: 3, min: 0 }),
-    inst(b.id, 'Piezometer', 'Piezometer — Tekanan Pori', 4 + Math.random() * 6, 'm', now, { digits: 2, amp: 0.6, noise: 0.15 }),
-    inst(b.id, 'V-Notch', 'V-Notch — Rembesan', 1.5 + Math.random() * 5, 'l/dt', now, { digits: 2, amp: 0.8, noise: 0.2, min: 0 }),
-    inst(b.id, 'Inklinometer', 'Inklinometer — Deformasi', 0.5 + Math.random() * 3, 'mm', now, { digits: 2, amp: 0.4, noise: 0.1, min: 0 }),
-    inst(b.id, 'Sensor Pintu', 'Sensor Bukaan Spillway', avgGate, '%', now, { digits: 0, amp: 8, noise: 2, min: 0 }),
-    inst(b.id, 'CCTV', 'CCTV — Pemantau Bendungan', 96 + Math.random() * 4, '% uptime', now, { digits: 0, amp: 2, noise: 1, min: 0 }),
-  ]);
+  const U = instrumentUnit(b);
+  const at = (along: number, cross: number) => ({
+    lat: b.lat + cross * U,
+    lng: b.lng + along * U,
+  });
+
+  const list: Instrument[] = [
+    // --- Hidrologi / hidrometri ---
+    inst(b.id, 'AWLR', 'AWLR — Automatic Water Level Recorder', b.elevasi, 'mdpl', now, {
+      primary: true, digits: 2, amp: 1.4, noise: 0.08, min: b.elevasi - 6,
+      ...at(-3.4, 2.0), lokasi: 'Pos AWLR Menara Intake',
+    }),
+    inst(b.id, 'AFMR', 'AFMR — Automatic Flow Meter Recorder Inflow', b.inflow, 'm³/s', now, {
+      digits: 1, amp: b.inflow * 0.35, noise: b.inflow * 0.06, min: 0,
+      ...at(-2.4, 1.4), lokasi: 'Pos AFMR Saluran Inlet',
+    }),
+    inst(b.id, 'AFMR', 'AFMR — Automatic Flow Meter Recorder Outflow', b.outflow, 'm³/s', now, {
+      digits: 1, amp: Math.max(4, b.outflow * 0.3), noise: Math.max(0.4, b.outflow * 0.05), min: 0,
+      ...at(2.2, -0.8), lokasi: 'Pos AFMR Saluran Outlet',
+    }),
+    inst(b.id, 'AWS', 'AWS — Automatic Weather Station', 26 + Math.random() * 6, '°C', now, {
+      digits: 1, amp: 3, noise: 0.6, ...at(3.0, -2.4), lokasi: 'Pos AWS Kantor Pengelola',
+    }),
+    inst(b.id, 'ARR', 'ARR — Automatic Rain Recorder', 4 + Math.random() * 18, 'mm', now, {
+      digits: 1, amp: 10, noise: 3, min: 0, ...at(3.6, -1.8), lokasi: 'Pos ARR Kantor Pengelola',
+    }),
+    inst(b.id, 'AWQR', 'AWQR — Automatic Water Quality Recorder', 6.9 + Math.random() * 0.8, 'pH', now, {
+      digits: 2, amp: 0.35, noise: 0.08, min: 5.5, ...at(-3.0, 1.2), lokasi: 'Pos AWQR Intake Waduk',
+    }),
+
+    // --- Geoteknik / deformasi (tubuh bendungan) ---
+    inst(b.id, 'AVWR', 'AVWR — VW Piezometer P-1 Tekanan Pori', 4 + Math.random() * 6, 'mH₂O', now, {
+      digits: 2, amp: 0.6, noise: 0.15, ...at(-1.6, 0.4), lokasi: 'Pos AVWR Gallery STA 0+120',
+    }),
+    inst(b.id, 'AVWR', 'AVWR — VW Piezometer P-2 Tekanan Pori', 3 + Math.random() * 6, 'mH₂O', now, {
+      digits: 2, amp: 0.6, noise: 0.15, ...at(0.4, 0.2), lokasi: 'Pos AVWR Gallery STA 0+240',
+    }),
+    inst(b.id, 'ADR', 'ADR — Automatic Deformation Recorder Lereng', 0.5 + Math.random() * 3, 'mm', now, {
+      digits: 2, amp: 0.4, noise: 0.1, min: 0, ...at(-0.6, -0.4), lokasi: 'Pos ADR Lereng Hilir STA 0+180',
+    }),
+    inst(b.id, 'AVWR', 'AVWR — Settlement Gauge S-1', 1 + Math.random() * 4, 'mm', now, {
+      digits: 2, amp: 0.3, noise: 0.08, min: 0, ...at(-1.0, 0.9), lokasi: 'Pos AVWR Puncak STA 0+150',
+    }),
+    inst(b.id, 'AVWR', 'AVWR — Settlement Gauge S-2', 1 + Math.random() * 4, 'mm', now, {
+      digits: 2, amp: 0.3, noise: 0.08, min: 0, ...at(1.0, 0.9), lokasi: 'Pos AVWR Puncak STA 0+300',
+    }),
+    inst(b.id, 'AVWR', 'AVWR — Crack Meter Spillway', 0.2 + Math.random() * 1.5, 'mm', now, {
+      digits: 2, amp: 0.15, noise: 0.04, min: 0, ...at(1.8, -0.2), lokasi: 'Pos AVWR Struktur Spillway',
+    }),
+    inst(b.id, 'ADR', 'ADR — Automatic Deformation Recorder Puncak', 0.4 + Math.random() * 2.5, 'mm', now, {
+      digits: 2, amp: 0.35, noise: 0.08, min: 0, ...at(0.2, 1.1), lokasi: 'Puncak bendungan (titik kontrol)',
+    }),
+
+    // --- Rembesan & operasi ---
+    inst(b.id, 'AVWR', 'AVWR — V-Notch Weir Debit Rembesan', 1.5 + Math.random() * 5, 'l/dt', now, {
+      digits: 2, amp: 0.8, noise: 0.2, min: 0, ...at(-0.4, -2.4), lokasi: 'Pos Rembesan Toe Drain',
+    }),
+    inst(b.id, 'AWGC', 'AWGC — Automatic Water Gate Controller Spillway', avgGate, '%', now, {
+      digits: 0, amp: 8, noise: 2, min: 0, ...at(1.6, 1.0), lokasi: 'Pos AWGC Pintu Spillway',
+    }),
+    inst(b.id, 'EWS', 'EWS — Early Warning Siren Hilir', 1, 'level', now, {
+      digits: 0, amp: 0.1, noise: 0, min: 0, ...at(2.8, -2.8), lokasi: 'Pos EWS Hilir Bendungan',
+    }),
+    inst(b.id, 'APLR', 'APLR — Asset Protection Logging Recorder', 98 + Math.random() * 2, '% aman', now, {
+      digits: 0, amp: 2, noise: 0.5, min: 0, ...at(0.7, -1.6), lokasi: 'Pos APLR Gallery Instrumentasi',
+    }),
+    inst(b.id, 'CCTV', 'CCTV — Pemantau Visual Bendungan', 96 + Math.random() * 4, '% uptime', now, {
+      digits: 0, amp: 2, noise: 1, min: 0, ...at(2.2, 0.6), lokasi: 'Menara pandang',
+    }),
+  ];
+  return withFault(list);
 }
 
 function irigasiInstruments(
@@ -300,6 +413,104 @@ export function buildData(now: number): DashboardData {
   const pos: PosHidrologi[] = posSeed.map((b) => buildPos(b, now));
 
   // ----- Bendungan -----
+  type BendunganMetricSeed = Pick<
+    Bendungan,
+    'elevasi' | 'elevasiNormal' | 'elevasiBanjir' | 'volume' | 'kapasitas' | 'inflow' | 'outflow' | 'gates'
+  >;
+
+  const bendunganMetrics: Record<string, BendunganMetricSeed> = {
+    'bend-riam-kanan': {
+      elevasi: 58.4,
+      elevasiNormal: 57.0,
+      elevasiBanjir: 62.0,
+      volume: 642.0,
+      kapasitas: 772.0,
+      inflow: 148,
+      outflow: 112,
+      gates: [
+        { id: 'P1', opening: 36 },
+        { id: 'P2', opening: 28 },
+        { id: 'P3', opening: 12 },
+      ],
+    },
+    'bend-tapin': {
+      elevasi: 96.8,
+      elevasiNormal: 95.5,
+      elevasiBanjir: 100.5,
+      volume: 45.2,
+      kapasitas: 56.7,
+      inflow: 31,
+      outflow: 24,
+      gates: [
+        { id: 'P1', opening: 22 },
+        { id: 'P2', opening: 10 },
+      ],
+    },
+    'bend-sepaku-semoi': {
+      elevasi: 24.9,
+      elevasiNormal: 24.0,
+      elevasiBanjir: 28.0,
+      volume: 12.8,
+      kapasitas: 16.17,
+      inflow: 12,
+      outflow: 8,
+      gates: [
+        { id: 'P1', opening: 15 },
+        { id: 'P2', opening: 0 },
+      ],
+    },
+    'bend-manggar': {
+      elevasi: 34.2,
+      elevasiNormal: 33.5,
+      elevasiBanjir: 36.0,
+      volume: 14.8,
+      kapasitas: 16.3,
+      inflow: 18,
+      outflow: 11,
+      gates: [
+        { id: 'P1', opening: 18 },
+        { id: 'P2', opening: 12 },
+      ],
+    },
+    'bend-benanga': {
+      elevasi: 12.4,
+      elevasiNormal: 12.0,
+      elevasiBanjir: 14.0,
+      volume: 0.9,
+      kapasitas: 1.2,
+      inflow: 10,
+      outflow: 8,
+      gates: [
+        { id: 'P1', opening: 30 },
+        { id: 'P2', opening: 24 },
+      ],
+    },
+    'bend-teritip': {
+      elevasi: 23.7,
+      elevasiNormal: 23.0,
+      elevasiBanjir: 25.5,
+      volume: 2.1,
+      kapasitas: 2.43,
+      inflow: 6,
+      outflow: 4,
+      gates: [
+        { id: 'P1', opening: 16 },
+        { id: 'P2', opening: 8 },
+      ],
+    },
+  };
+
+  const fallbackBendunganMetric: BendunganMetricSeed = {
+    elevasi: 20,
+    elevasiNormal: 19,
+    elevasiBanjir: 23,
+    volume: 2,
+    kapasitas: 3,
+    inflow: 8,
+    outflow: 6,
+    gates: [{ id: 'P1', opening: 10 }],
+  };
+
   const bendSeed: Array<
     Omit<
       Bendungan,
@@ -309,63 +520,16 @@ export function buildData(now: number): DashboardData {
       | 'updatedAt'
       | 'instruments'
     >
-  > = [
-    {
-      id: 'bend-cigaru',
-      name: 'Bendungan Cigaru',
-      river: 'S. Cigaru',
-      lat: -6.52,
-      lng: 106.18,
-      elevasi: 187.4,
-      elevasiNormal: 184.0,
-      elevasiBanjir: 188.5,
-      volume: 142.8,
-      kapasitas: 168.0,
-      inflow: 96,
-      outflow: 71,
-      gates: [
-        { id: 'P1', opening: 35 },
-        { id: 'P2', opening: 20 },
-        { id: 'P3', opening: 0 },
-      ],
-    },
-    {
-      id: 'bend-sindangheula',
-      name: 'Bendungan Sindangheula',
-      river: 'S. Cibanten',
-      lat: -6.35,
-      lng: 106.05,
-      elevasi: 96.2,
-      elevasiNormal: 95.0,
-      elevasiBanjir: 100.0,
-      volume: 7.9,
-      kapasitas: 9.3,
-      inflow: 14,
-      outflow: 12,
-      gates: [
-        { id: 'P1', opening: 10 },
-        { id: 'P2', opening: 0 },
-      ],
-    },
-    {
-      id: 'bend-cipanunjang',
-      name: 'Waduk Cipanunjang',
-      river: 'S. Cikawung',
-      lat: -6.58,
-      lng: 106.285,
-      elevasi: 271.0,
-      elevasiNormal: 270.0,
-      elevasiBanjir: 276.0,
-      volume: 21.3,
-      kapasitas: 28.0,
-      inflow: 31,
-      outflow: 26,
-      gates: [
-        { id: 'P1', opening: 5 },
-        { id: 'P2', opening: 0 },
-      ],
-    },
-  ];
+  > = WADUK_BIG.map((waduk) => ({
+    id: waduk.id,
+    name: waduk.name,
+    river: waduk.river,
+    lat: waduk.lat,
+    lng: waduk.lng,
+    ...(bendunganMetrics[waduk.id] ?? fallbackBendunganMetric),
+    geojson: waduk.geojson,
+    geojsonSource: waduk.source,
+  }));
 
   const bendungan: Bendungan[] = bendSeed.map((b) => ({
     ...b,

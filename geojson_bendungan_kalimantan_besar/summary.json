@@ -1,0 +1,62 @@
+[
+  {
+    "id": "bend-riam-kanan",
+    "name": "Waduk Riam Kanan",
+    "river": "S. Riam Kanan",
+    "lat": -3.516065965867721,
+    "lng": 115.06643751000006,
+    "areaKm2": 182.31,
+    "file": "geojson_bendungan_kalimantan_besar/waduk_riam_kanan.geojson",
+    "notes": "Reservoir besar PLTA Ir. P.M. Noor dari BIG."
+  },
+  {
+    "id": "bend-tapin",
+    "name": "Bendungan Tapin",
+    "river": "S. Tapin",
+    "lat": -2.949664710747667,
+    "lng": 115.35257260654203,
+    "areaKm2": 2.1,
+    "file": "geojson_bendungan_kalimantan_besar/bendungan_tapin.geojson",
+    "notes": "Bendungan multiguna Kalimantan Selatan; polygon OSM lebih mutakhir daripada RBI."
+  },
+  {
+    "id": "bend-sepaku-semoi",
+    "name": "Bendungan Sepaku Semoi",
+    "river": "S. Sepaku / S. Semoi",
+    "lat": -0.9020437286902285,
+    "lng": 116.85155340738051,
+    "areaKm2": 0.62,
+    "file": "geojson_bendungan_kalimantan_besar/bendungan_sepaku_semoi.geojson",
+    "notes": "Bendungan air baku IKN; polygon OSM dipakai karena proyek baru."
+  },
+  {
+    "id": "bend-manggar",
+    "name": "Bendungan Manggar",
+    "river": "S. Manggar",
+    "lat": -1.1560435212463671,
+    "lng": 116.90849800804003,
+    "areaKm2": 4.58,
+    "file": "geojson_bendungan_kalimantan_besar/bendungan_manggar.geojson",
+    "notes": "Sumber air baku utama Balikpapan; polygon waduk dan tubuh bendungan dari OSM."
+  },
+  {
+    "id": "bend-benanga",
+    "name": "Bendungan Benanga",
+    "river": "S. Karang Mumus",
+    "lat": -0.408087055228758,
+    "lng": 117.19418829150322,
+    "areaKm2": 0.13,
+    "file": "geojson_bendungan_kalimantan_besar/bendungan_benanga.geojson",
+    "notes": "Bendungan/waduk pengendali aliran Karang Mumus di Samarinda; OSM menyediakan polygon waduk."
+  },
+  {
+    "id": "bend-teritip",
+    "name": "Bendungan Teritip",
+    "river": "S. Teritip",
+    "lat": -1.1490366986486487,
+    "lng": 116.9751672481982,
+    "areaKm2": 0.86,
+    "file": "geojson_bendungan_kalimantan_besar/bendungan_teritip.geojson",
+    "notes": "Bendungan air baku Balikpapan Timur; polygon waduk dan bendungan dari OSM."
+  }
+]

@@ -36,6 +36,11 @@ export interface Instrument {
   valueDigits?: number;
   /** 'telemetry' = alat ukur, 'health' = indikator kesehatan stasiun (catu daya). default telemetry */
   category?: 'telemetry' | 'health';
+  /** posisi alat di peta (opsional) — dipakai pada peta sebaran instrumen bendungan */
+  lat?: number;
+  lng?: number;
+  /** penempatan fisik singkat, mis. "Tubuh bendungan STA 0+150" */
+  lokasi?: string;
 }
 
 /** Jenis pos berdasarkan logger/fungsi (satu pos satu logger) */
@@ -80,6 +85,28 @@ export interface SpillwayGate {
   opening: number;
 }
 
+export type GeoJsonPosition = [number, number] | [number, number, number];
+
+export type BendunganGeoJsonGeometry =
+  | { type: 'Polygon'; coordinates: GeoJsonPosition[][] }
+  | { type: 'MultiPolygon'; coordinates: GeoJsonPosition[][][] }
+  | { type: 'LineString'; coordinates: GeoJsonPosition[] };
+
+export interface BendunganGeoJsonFeature {
+  type: 'Feature';
+  properties: {
+    name: string;
+    kind: 'reservoir' | 'dam' | 'spillway' | 'footprint';
+    source?: string;
+  };
+  geometry: BendunganGeoJsonGeometry;
+}
+
+export interface BendunganGeoJson {
+  type: 'FeatureCollection';
+  features: BendunganGeoJsonFeature[];
+}
+
 export interface Bendungan {
   id: string;
   name: string;
@@ -102,6 +129,9 @@ export interface Bendungan {
   historyElevasi: SeriesPoint[];
   historyInflow: SeriesPoint[];
   instruments: Instrument[];
+  /** GeoJSON area waduk/tubuh bendungan untuk peta detail */
+  geojson?: BendunganGeoJson;
+  geojsonSource?: string;
 }
 
 export interface PintuAir {

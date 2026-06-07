@@ -265,6 +265,54 @@
   }
 }
 
+/* Marker instrumen pada peta sebaran bendungan */
+.bws-inst-marker {
+  position: relative;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.bws-inst-marker .core {
+  width: 11px;
+  height: 11px;
+  border-radius: 9999px;
+  background: currentColor;
+  border: 2px solid rgba(10, 15, 28, 0.85);
+  box-shadow: 0 0 0 2px currentColor;
+  transition: all 0.15s ease;
+}
+.theme-light .bws-inst-marker .core {
+  border-color: rgba(255, 255, 255, 0.9);
+}
+.bws-inst-marker.active .core {
+  width: 14px;
+  height: 14px;
+  box-shadow:
+    0 0 0 3px currentColor,
+    0 0 12px 3px currentColor;
+}
+.bws-inst-marker.active .ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 9999px;
+  border: 1.5px solid currentColor;
+  opacity: 0.8;
+  animation: bws-pulse 1.6s ease-out infinite;
+}
+
+/* Peta detail bendungan: Google satellite tanpa perspektif. */
+.bws-dam-map-tilt {
+  background: #07101c;
+}
+.bws-dam-map-tilt::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 450;
+  background: linear-gradient(to bottom, rgba(6, 10, 18, 0.08), transparent 34%, rgba(5, 8, 14, 0.16));
+}
+
 @keyframes bws-fade-up {
   from {
     opacity: 0;

@@ -28,6 +28,13 @@ const ICONS: Record<string, Component<any>> = {
   // pos duga air
   AWLR: Waves,
   TMA: Waves,
+  AFMR: Gauge,
+  AWGC: SlidersHorizontal,
+  AVWR: Gauge,
+  AWQR: FlaskConical,
+  ADR: MoveDiagonal,
+  APLR: Activity,
+  EWS: Activity,
   // pos hujan
   ARR: CloudRainWind,
   'Curah Hujan': CloudRainWind,
@@ -46,6 +53,8 @@ const ICONS: Record<string, Component<any>> = {
   Kekeruhan: GlassWater,
   TDS: TestTube,
   DHL: Zap,
+  // stasiun klimatologi ringkas (AWS) di bendungan
+  AWS: Thermometer,
   // bendungan / irigasi / sumur / O&P
   Piezometer: Gauge,
   'V-Notch': Droplets,
@@ -54,6 +63,8 @@ const ICONS: Record<string, Component<any>> = {
   CCTV: Cctv,
   'Panel Kontrol': Cpu,
   Settlement: Ruler,
+  'Patok Geser': Ruler,
+  'Crack Meter': Ruler,
   'Water Level Logger': HardDrive,
   'Sensor Kondisi': Activity,
   // health
