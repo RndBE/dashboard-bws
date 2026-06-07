@@ -14,6 +14,7 @@
   import AnalisaModule from './lib/components/modules/AnalisaModule.svelte';
 
   import { mode, activeModule, selected, startSimulation } from './lib/stores';
+  import { startRouter } from './lib/router';
   import type { ModuleKey } from './lib/types';
 
   const MODULES: Record<ModuleKey, any> = {
@@ -27,7 +28,14 @@
 
   const Current = $derived(MODULES[$activeModule]);
 
-  onMount(() => startSimulation());
+  onMount(() => {
+    const stopRouter = startRouter();
+    const stopSim = startSimulation();
+    return () => {
+      stopRouter();
+      stopSim();
+    };
+  });
 </script>
 
 <div class="flex h-screen flex-col overflow-hidden">
