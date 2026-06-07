@@ -100,7 +100,7 @@
         />
       </Panel>
       <Panel title="Curah Hujan · {peak.name}">
-        <MiniChart points={peak.historyHujan} height={140} color="#c9a227" unit="mm" digits={0} yMin={0} />
+        <MiniChart points={peak.historyHujan} height={140} color="#c9a227" unit="mm" digits={0} yMin={0} bars />
       </Panel>
     </div>
   </div>

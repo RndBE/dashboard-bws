@@ -1,8 +1,9 @@
 <script lang="ts">
   import { onMount, type Snippet } from 'svelte';
   import L from 'leaflet';
-  import { markers, openDetail } from '../../stores';
-  import { statusColor } from '../../status';
+  import { get } from 'svelte/store';
+  import { markers, openDetail, paused } from '../../stores';
+  import { statusColor, STATUS } from '../../status';
   import { KIND_LABEL } from '../../status';
   import { MAP_CENTER, MAP_ZOOM } from '../../data/seed';
   import type { MapMarker } from '../../types';
@@ -11,22 +12,35 @@
     overlay?: Snippet;
     zoom?: number;
     interactive?: boolean;
+    /** auto-tour: sorot pos-pos (prioritas siaga+) secara berkala — untuk videowall */
+    autoTour?: boolean;
+    /** kelas tambahan utk styling khusus dinding (mis. sembunyikan kontrol) */
+    wall?: boolean;
   }
-  let { overlay, zoom = MAP_ZOOM, interactive = true }: Props = $props();
+  let {
+    overlay,
+    zoom = MAP_ZOOM,
+    interactive = true,
+    autoTour = false,
+    wall = false,
+  }: Props = $props();
 
   let el: HTMLDivElement;
   let map: L.Map | undefined;
   const layer = L.layerGroup();
-  const reg = new Map<string, { marker: L.Marker; status: string }>();
+  const reg = new Map<string, { marker: L.Marker; status: string; focused: boolean }>();
+  let focusedId: string | null = null;
 
-  function iconFor(m: MapMarker) {
+  function iconFor(m: MapMarker, focused = false) {
     const color = statusColor(m.status);
     const pulse = m.status === 'normal' ? '' : 'pulse';
+    const focusCls = focused ? 'focus' : '';
+    const size = focused ? 30 : 22;
     return L.divIcon({
       className: '',
-      iconSize: [22, 22],
-      iconAnchor: [11, 11],
-      html: `<div class="bws-marker ${pulse}" style="color:${color};width:22px;height:22px;position:relative;">
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+      html: `<div class="bws-marker ${pulse} ${focusCls}" style="color:${color};width:${size}px;height:${size}px;position:relative;">
         <span class="ring"></span><span class="core"></span></div>`,
     });
   }
@@ -38,12 +52,16 @@
       <span style="font-family:var(--font-mono);color:${statusColor(m.status)}">${m.primaryValue}</span></div>`;
   }
 
+  let latest: MapMarker[] = [];
+
   function sync(ms: MapMarker[]) {
+    latest = ms;
     if (!map) return;
     for (const m of ms) {
       const existing = reg.get(m.id);
+      const focused = focusedId === m.id;
       if (!existing) {
-        const marker = L.marker([m.lat, m.lng], { icon: iconFor(m) })
+        const marker = L.marker([m.lat, m.lng], { icon: iconFor(m, focused) })
           .bindTooltip(tipFor(m), {
             direction: 'top',
             offset: [0, -10],
@@ -52,15 +70,24 @@
           })
           .on('click', () => openDetail(m.kind, m.id));
         marker.addTo(layer);
-        reg.set(m.id, { marker, status: m.status });
+        reg.set(m.id, { marker, status: m.status, focused });
       } else {
-        if (existing.status !== m.status) {
-          existing.marker.setIcon(iconFor(m));
+        if (existing.status !== m.status || existing.focused !== focused) {
+          existing.marker.setIcon(iconFor(m, focused));
           existing.status = m.status;
+          existing.focused = focused;
         }
         existing.marker.setTooltipContent(tipFor(m));
       }
     }
+  }
+
+  /** urutan tur: pos siaga+ dulu (terburuk lebih dulu), lalu sisanya */
+  function tourOrder(ms: MapMarker[]): MapMarker[] {
+    const sev = (m: MapMarker) => STATUS[m.status].weight;
+    const critical = ms.filter((m) => m.status !== 'normal').sort((a, b) => sev(b) - sev(a));
+    const rest = ms.filter((m) => m.status === 'normal');
+    return critical.length ? [...critical, ...rest.slice(0, 3)] : ms;
   }
 
   onMount(() => {
@@ -90,8 +117,41 @@
     const unsub = markers.subscribe((ms) => sync(ms));
     setTimeout(() => map?.invalidateSize(), 60);
 
+    // jaga ukuran peta tetap sesuai kontainer (mis. saat grid menyempit setelah mount)
+    let roTimer: ReturnType<typeof setTimeout> | undefined;
+    const ro = new ResizeObserver(() => {
+      clearTimeout(roTimer);
+      roTimer = setTimeout(() => map?.invalidateSize(), 80);
+    });
+    ro.observe(el);
+
+    // ---- auto-tour untuk videowall ----
+    let tourTimer: ReturnType<typeof setInterval> | undefined;
+    let tourStart: ReturnType<typeof setTimeout> | undefined;
+    if (autoTour) {
+      let idx = 0;
+      const baseZoom = zoom;
+      const step = () => {
+        if (!map || get(paused)) return;
+        const order = tourOrder(latest);
+        if (!order.length) return;
+        const m = order[idx % order.length];
+        idx++;
+        focusedId = m.id;
+        sync(latest); // perbarui ikon fokus
+        map.flyTo([m.lat, m.lng], baseZoom + 1.6, { duration: 2.4, easeLinearity: 0.18 });
+      };
+      // mulai setelah peta settle, lalu ulang berkala
+      tourStart = setTimeout(step, 3500);
+      tourTimer = setInterval(step, 7000);
+    }
+
     return () => {
       unsub();
+      ro.disconnect();
+      clearTimeout(roTimer);
+      if (tourTimer) clearInterval(tourTimer);
+      if (tourStart) clearTimeout(tourStart);
       map?.remove();
       map = undefined;
       reg.clear();
@@ -100,7 +160,7 @@
 </script>
 
 <div class="relative h-full w-full">
-  <div bind:this={el} class="h-full w-full"></div>
+  <div bind:this={el} class="h-full w-full {wall ? 'wall-map' : ''}"></div>
   {#if overlay}
     <div class="pointer-events-none absolute inset-0 z-[500]">
       {@render overlay()}

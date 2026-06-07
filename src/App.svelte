@@ -31,14 +31,14 @@
 </script>
 
 <div class="flex h-screen flex-col overflow-hidden">
-  <TopBar />
-
   {#if $mode === 'wall'}
+    <!-- Mode Layar Dinding: videowall full-screen tanpa TopBar -->
     <main class="min-h-0 flex-1 overflow-hidden">
       <WallView />
     </main>
     <DetailDrawer />
   {:else if $selected}
+    <TopBar />
     <main class="min-h-0 flex-1 overflow-y-auto">
       <div class="mx-auto max-w-[1700px] p-3 sm:p-4">
         {#key $selected.kind + $selected.id}
@@ -49,6 +49,7 @@
       </div>
     </main>
   {:else}
+    <TopBar />
     <TabNav />
     <main class="min-h-0 flex-1 overflow-y-auto">
       <div class="mx-auto max-w-[1700px] p-3 sm:p-4">

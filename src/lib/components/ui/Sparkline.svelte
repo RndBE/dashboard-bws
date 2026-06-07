@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { splinePath } from '../../series';
+
   interface Props {
     points: number[];
     color?: string;
@@ -7,6 +9,8 @@
     strokeWidth?: number;
     /** tampilkan titik terakhir */
     dot?: boolean;
+    /** render sebagai batang/kolom (mis. curah hujan) alih-alih kurva */
+    bars?: boolean;
   }
   let {
     points,
@@ -15,6 +19,7 @@
     area = true,
     strokeWidth = 1.6,
     dot = true,
+    bars = false,
   }: Props = $props();
 
   const W = 100;
@@ -33,10 +38,21 @@
       const y = pad + h - ((v - min) / span) * h;
       return [x, y] as const;
     });
-    const line = xy.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(2)} ${y.toFixed(2)}`).join(' ');
+    const line = splinePath(xy);
     const fill = `${line} L${W} ${height} L0 ${height} Z`;
     const last = xy[xy.length - 1];
-    return { line, fill, last };
+
+    // geometri batang: kolom dari dasar (curah hujan), basis nol bila masuk rentang
+    const slot = W / Math.max(1, pts.length);
+    const barW = Math.max(0.6, slot * 0.6);
+    const baseY = height - pad;
+    const rects = pts.map((v, i) => {
+      const x = i * stepX;
+      const y = pad + h - ((v - min) / span) * h;
+      return { x: x - barW / 2, y, w: barW, h: Math.max(0, baseY - y) };
+    });
+
+    return { line, fill, last, rects };
   });
 </script>
 
@@ -52,25 +68,31 @@
       <stop offset="100%" stop-color={color} stop-opacity="0" />
     </linearGradient>
   </defs>
-  {#if area}
-    <path d={geom.fill} fill="url(#{uid})" />
-  {/if}
-  <path
-    d={geom.line}
-    fill="none"
-    stroke={color}
-    stroke-width={strokeWidth}
-    stroke-linejoin="round"
-    stroke-linecap="round"
-    vector-effect="non-scaling-stroke"
-  />
-  {#if dot && geom.last}
-    <circle
-      cx={geom.last[0]}
-      cy={geom.last[1]}
-      r="2"
-      fill={color}
+  {#if bars}
+    {#each geom.rects as r}
+      <rect x={r.x} y={r.y} width={r.w} height={r.h} fill={color} opacity="0.85" />
+    {/each}
+  {:else}
+    {#if area}
+      <path d={geom.fill} fill="url(#{uid})" />
+    {/if}
+    <path
+      d={geom.line}
+      fill="none"
+      stroke={color}
+      stroke-width={strokeWidth}
+      stroke-linejoin="round"
+      stroke-linecap="round"
       vector-effect="non-scaling-stroke"
     />
+    {#if dot && geom.last}
+      <circle
+        cx={geom.last[0]}
+        cy={geom.last[1]}
+        r="2"
+        fill={color}
+        vector-effect="non-scaling-stroke"
+      />
+    {/if}
   {/if}
 </svg>

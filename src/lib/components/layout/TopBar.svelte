@@ -3,7 +3,7 @@
   import Play from '@lucide/svelte/icons/play';
   import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
   import Monitor from '@lucide/svelte/icons/monitor';
-  import Emblem from './Emblem.svelte';
+  import Logo from './Logo.svelte';
   import Clock from '../ui/Clock.svelte';
   import StatusBadge from '../ui/StatusBadge.svelte';
   import { mode, paused, overallStatus, activeAlerts } from '../../stores';
@@ -14,7 +14,7 @@
   class="flex items-center gap-4 border-b border-line bg-surface/90 px-4 py-2.5 backdrop-blur"
 >
   <div class="flex items-center gap-3">
-    <Emblem />
+    <Logo height={24} />
     <div class="leading-tight">
       <h1 class="text-[14px] font-semibold tracking-tight text-ink-strong">
         Pusat Kendali <span class="text-accent-bright">·</span>

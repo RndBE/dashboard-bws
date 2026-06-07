@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { SeriesPoint } from '../../types';
   import { num } from '../../format';
+  import { splinePath } from '../../series';
 
   interface Threshold {
     value: number;
@@ -17,6 +18,8 @@
     yMin?: number;
     yMax?: number;
     digits?: number;
+    /** render sebagai batang (mis. curah hujan) alih-alih kurva */
+    bars?: boolean;
   }
   let {
     points,
@@ -27,6 +30,7 @@
     yMin,
     yMax,
     digits = 1,
+    bars = false,
   }: Props = $props();
 
   let w = $state(640);
@@ -54,15 +58,19 @@
     const x = (i: number) => padL + (i / Math.max(1, pts.length - 1)) * innerW;
     const y = (v: number) => padT + innerH - ((v - lo) / span) * innerH;
 
-    const line = pts
-      .map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)} ${y(p.v).toFixed(1)}`)
-      .join(' ');
-    const fill = `${line} L${x(pts.length - 1).toFixed(1)} ${(padT + innerH).toFixed(
+    const xy = pts.map((p, i) => [x(i), y(p.v)] as const);
+    const line = splinePath(xy);
+    const baseY = padT + innerH;
+    const fill = `${line} L${x(pts.length - 1).toFixed(1)} ${baseY.toFixed(
       1,
-    )} L${padL} ${(padT + innerH).toFixed(1)} Z`;
+    )} L${padL} ${baseY.toFixed(1)} Z`;
 
     const yTicks = [lo + span * 0.12, (lo + hi) / 2, hi - span * 0.12];
     const xIdx = [0, Math.floor((pts.length - 1) / 2), pts.length - 1];
+
+    // geometri batang (mode bars)
+    const barW = Math.max(2, (innerW / Math.max(1, pts.length)) * 0.62);
+    const zeroY = y(Math.max(lo, Math.min(hi, 0)));
 
     return {
       line,
@@ -75,6 +83,8 @@
       yTicks,
       xIdx,
       innerH,
+      barW,
+      zeroY,
       lastX: x(pts.length - 1),
       lastY: y(pts[pts.length - 1].v),
     };
@@ -143,18 +153,33 @@
       {/if}
     {/each}
 
-    <!-- area + line -->
-    <path d={g.fill} fill="url(#{uid})" />
-    <path
-      d={g.line}
-      fill="none"
-      stroke={color}
-      stroke-width="1.8"
-      stroke-linejoin="round"
-      stroke-linecap="round"
-    />
-    <circle cx={g.lastX} cy={g.lastY} r="2.8" fill={color} />
-    <circle cx={g.lastX} cy={g.lastY} r="5" fill={color} opacity="0.25" />
+    {#if bars}
+      <!-- batang (mis. curah hujan) -->
+      {#each g.pts as p, i}
+        <rect
+          x={g.x(i) - g.barW / 2}
+          y={Math.min(g.y(p.v), g.zeroY)}
+          width={g.barW}
+          height={Math.max(0, Math.abs(g.zeroY - g.y(p.v)))}
+          fill={color}
+          opacity="0.78"
+          rx="1.5"
+        />
+      {/each}
+    {:else}
+      <!-- area + kurva spline -->
+      <path d={g.fill} fill="url(#{uid})" />
+      <path
+        d={g.line}
+        fill="none"
+        stroke={color}
+        stroke-width="1.8"
+        stroke-linejoin="round"
+        stroke-linecap="round"
+      />
+      <circle cx={g.lastX} cy={g.lastY} r="2.8" fill={color} />
+      <circle cx={g.lastX} cy={g.lastY} r="5" fill={color} opacity="0.25" />
+    {/if}
 
     <!-- x labels -->
     {#each g.xIdx as i}

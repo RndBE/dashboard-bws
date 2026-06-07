@@ -118,7 +118,7 @@
           />
         </Panel>
         <Panel title="Curah Hujan · 48 jam">
-          <MiniChart points={p.historyHujan} color="#c9a227" unit="mm" digits={0} yMin={0} />
+          <MiniChart points={p.historyHujan} color="#c9a227" unit="mm" digits={0} yMin={0} bars />
         </Panel>
       {:else if a.kind === 'bendungan'}
         {@const b = a.item as Bendungan}

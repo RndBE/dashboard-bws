@@ -227,7 +227,7 @@
     {#if a.kind === 'pos'}
       {@const p = a.item as PosHidrologi}
       <Panel title="Curah Hujan" subtitle="{period} jam" icon={ChartColumn}>
-        <MiniChart points={lastN(p.historyHujan, period)} height={150} color="#c9a227" unit="mm" digits={0} yMin={0} />
+        <MiniChart points={lastN(p.historyHujan, period)} height={150} color="#c9a227" unit="mm" digits={0} yMin={0} bars />
       </Panel>
     {/if}
 
