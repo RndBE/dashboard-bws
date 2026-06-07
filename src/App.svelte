@@ -4,6 +4,7 @@
   import TabNav from './lib/components/layout/TabNav.svelte';
   import DetailDrawer from './lib/components/panels/DetailDrawer.svelte';
   import WallView from './lib/components/views/WallView.svelte';
+  import WallUnavailable from './lib/components/views/WallUnavailable.svelte';
   import AssetDetailPage from './lib/components/views/AssetDetailPage.svelte';
   import LoginView from './lib/components/views/LoginView.svelte';
   import LogoutModal from './lib/components/ui/LogoutModal.svelte';
@@ -31,12 +32,23 @@
 
   const Current = $derived(MODULES[$activeModule]);
 
+  // Mode Layar Dinding hanya untuk layar besar (≥ 1024px)
+  const LARGE_MQ = '(min-width: 1024px)';
+  let isLargeScreen = $state(
+    typeof window !== 'undefined' ? window.matchMedia(LARGE_MQ).matches : true,
+  );
+
   onMount(() => {
     const stopRouter = startRouter();
     const stopSim = startSimulation();
+    const mq = window.matchMedia(LARGE_MQ);
+    isLargeScreen = mq.matches;
+    const onMq = (e: MediaQueryListEvent) => (isLargeScreen = e.matches);
+    mq.addEventListener('change', onMq);
     return () => {
       stopRouter();
       stopSim();
+      mq.removeEventListener('change', onMq);
     };
   });
 </script>
@@ -47,10 +59,14 @@
   <div class="flex h-screen flex-col overflow-hidden">
     {#if $mode === 'wall'}
       <!-- Mode Layar Dinding: videowall full-screen tanpa TopBar -->
-      <main class="min-h-0 flex-1 overflow-hidden">
-        <WallView />
-      </main>
-      <DetailDrawer />
+      {#if isLargeScreen}
+        <main class="min-h-0 flex-1 overflow-hidden">
+          <WallView />
+        </main>
+        <DetailDrawer />
+      {:else}
+        <WallUnavailable />
+      {/if}
     {:else if $selected}
       <TopBar />
       <main class="min-h-0 flex-1 overflow-y-auto">

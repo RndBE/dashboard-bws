@@ -15,15 +15,15 @@
 
 <header class="border-b border-line bg-surface/90 backdrop-blur">
   <div
-    class="mx-auto flex w-full max-w-[1700px] items-center gap-4 px-3 py-2.5 sm:px-4"
+    class="mx-auto flex w-full max-w-[1700px] items-center gap-2 px-3 py-2.5 sm:gap-4 sm:px-4"
   >
-  <div class="flex items-center gap-3">
+  <div class="flex min-w-0 items-center gap-2.5 sm:gap-3">
     <Logo height={26} />
-    <div class="leading-tight">
-      <div class="text-[9px] font-semibold uppercase tracking-[0.26em] text-pu-bright">
+    <div class="min-w-0 leading-tight">
+      <div class="hidden truncate text-[9px] font-semibold uppercase tracking-[0.26em] text-pu-bright sm:block">
         Pusat Kendali Operasi
       </div>
-      <h1 class="text-[15px] font-semibold tracking-tight text-ink-strong">{BALAI_NAME}</h1>
+      <h1 class="truncate text-[13.5px] font-semibold tracking-tight text-ink-strong sm:text-[15px]">{BALAI_NAME}</h1>
     </div>
   </div>
 
@@ -34,7 +34,7 @@
     </span>
   </div>
 
-  <div class="ml-auto flex items-center gap-3">
+  <div class="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
     <span class="hidden items-center gap-1.5 lg:flex">
       <span class="relative flex h-2 w-2">
         <span
@@ -47,7 +47,9 @@
       >
     </span>
 
-    <Clock variant="full" />
+    <div class="hidden md:block">
+      <Clock variant="full" />
+    </div>
 
     <button
       onclick={() => paused.update((p) => !p)}
@@ -66,7 +68,7 @@
           ? 'bg-accent/20 text-accent-bright'
           : 'text-ink-muted hover:text-ink'}"
       >
-        <LayoutDashboard size={13} /> Interaktif
+        <LayoutDashboard size={13} /> <span class="hidden sm:inline">Interaktif</span>
       </button>
       <button
         onclick={() => mode.set('wall')}
@@ -75,7 +77,7 @@
           ? 'bg-accent/20 text-accent-bright'
           : 'text-ink-muted hover:text-ink'}"
       >
-        <Monitor size={13} /> Layar Dinding
+        <Monitor size={13} /> <span class="hidden sm:inline">Layar Dinding</span>
       </button>
     </div>
 
