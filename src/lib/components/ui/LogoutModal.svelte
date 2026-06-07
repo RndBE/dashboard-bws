@@ -36,7 +36,7 @@
         <button
           type="button"
           onclick={cancelLogout}
-          class="h-9 flex-1 rounded-lg border border-line bg-transparent text-[12.5px] font-medium text-ink-muted transition-colors hover:bg-white/[0.04] hover:text-ink-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+          class="h-9 flex-1 rounded-lg border border-line bg-transparent text-[12.5px] font-medium text-ink-muted transition-colors hover:bg-[var(--surface-hover)] hover:text-ink-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
         >
           Batal
         </button>

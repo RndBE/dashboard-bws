@@ -5,10 +5,13 @@
   import Monitor from '@lucide/svelte/icons/monitor';
   import UserRound from '@lucide/svelte/icons/user-round';
   import LogOut from '@lucide/svelte/icons/log-out';
+  import Sun from '@lucide/svelte/icons/sun';
+  import Moon from '@lucide/svelte/icons/moon';
   import Logo from './Logo.svelte';
   import Clock from '../ui/Clock.svelte';
   import StatusBadge from '../ui/StatusBadge.svelte';
   import { mode, paused, overallStatus, activeAlerts } from '../../stores';
+  import { theme, toggleTheme } from '../../theme';
   import { auth, requestLogout } from '../../auth';
   import { BALAI_NAME } from '../../data/seed';
 </script>
@@ -18,7 +21,7 @@
     class="mx-auto flex w-full max-w-[1700px] items-center gap-2 px-3 py-2.5 sm:gap-4 sm:px-4"
   >
   <div class="flex min-w-0 items-center gap-2.5 sm:gap-3">
-    <Logo height={26} />
+    <Logo height={26} colored={$theme === 'light'} />
     <div class="min-w-0 leading-tight">
       <div class="hidden truncate text-[9px] font-semibold uppercase tracking-[0.26em] text-pu-bright sm:block">
         Pusat Kendali Operasi
@@ -57,6 +60,14 @@
       class="grid h-8 w-8 place-items-center rounded-lg border border-line text-ink-muted transition-colors hover:bg-panel hover:text-ink-strong"
     >
       {#if $paused}<Play size={14} />{:else}<Pause size={14} />{/if}
+    </button>
+
+    <button
+      onclick={toggleTheme}
+      title={$theme === 'dark' ? 'Mode terang' : 'Mode gelap'}
+      class="grid h-8 w-8 place-items-center rounded-lg border border-line text-ink-muted transition-colors hover:bg-panel hover:text-ink-strong"
+    >
+      {#if $theme === 'dark'}<Sun size={14} />{:else}<Moon size={14} />{/if}
     </button>
 
     <!-- Mode toggle -->

@@ -6,6 +6,7 @@
   import Table from '@lucide/svelte/icons/table-2';
 
   import Panel from '../ui/Panel.svelte';
+  import CctvPanel from '../cctv/CctvPanel.svelte';
   import KpiCard from '../ui/KpiCard.svelte';
   import Sparkline from '../ui/Sparkline.svelte';
   import MiniChart from '../ui/MiniChart.svelte';
@@ -70,7 +71,7 @@
               {#each rows as p (p.id)}
                 <tr
                   onclick={() => openDetail('pos', p.id)}
-                  class="cursor-pointer border-b border-line-soft transition-colors hover:bg-white/[0.03]"
+                  class="cursor-pointer border-b border-line-soft transition-colors hover:bg-[var(--surface-hover)]"
                 >
                   <td class="px-3.5 py-2.5">
                     <div class="font-medium text-ink-strong">{p.name}</div>
@@ -117,4 +118,6 @@
       {/if}
     </div>
   </div>
+
+  <CctvPanel group="hidrologi" />
 </div>

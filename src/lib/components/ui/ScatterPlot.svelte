@@ -101,7 +101,7 @@
   {:else}
     <svg viewBox="0 0 {w} {height}" class="block w-full" style="height:{height}px">
       {#each g.yTicks as tv}
-        <line x1={padL} x2={w - padR} y1={g.sy(tv)} y2={g.sy(tv)} stroke="#1c2740" stroke-width="1" stroke-dasharray="2 4" />
+        <line x1={padL} x2={w - padR} y1={g.sy(tv)} y2={g.sy(tv)} style="stroke:var(--color-line)" stroke-width="1" stroke-dasharray="2 4" />
         <text x={padL - 5} y={g.sy(tv) + 3} text-anchor="end" class="fill-ink-dim" style="font-size:8.5px;font-family:var(--font-mono)">{num(tv, 1)}</text>
       {/each}
       {#each g.xTicks as tv}

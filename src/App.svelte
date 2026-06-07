@@ -19,6 +19,7 @@
   import { mode, activeModule, selected, startSimulation } from './lib/stores';
   import { startRouter } from './lib/router';
   import { auth } from './lib/auth';
+  import { theme } from './lib/theme';
   import type { ModuleKey } from './lib/types';
 
   const MODULES: Record<ModuleKey, any> = {
@@ -56,7 +57,11 @@
 {#if !$auth}
   <LoginView />
 {:else}
-  <div class="flex h-screen flex-col overflow-hidden">
+  <div
+    class="flex h-screen flex-col overflow-hidden {$theme === 'light' && $mode !== 'wall'
+      ? 'theme-light'
+      : ''}"
+  >
     {#if $mode === 'wall'}
       <!-- Mode Layar Dinding: videowall full-screen tanpa TopBar -->
       {#if isLargeScreen}
@@ -91,6 +96,6 @@
         </div>
       </main>
     {/if}
+    <LogoutModal />
   </div>
-  <LogoutModal />
 {/if}

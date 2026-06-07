@@ -4,6 +4,7 @@
   import Droplets from '@lucide/svelte/icons/droplets';
 
   import Panel from '../ui/Panel.svelte';
+  import CctvPanel from '../cctv/CctvPanel.svelte';
   import KpiCard from '../ui/KpiCard.svelte';
   import Gauge from '../ui/Gauge.svelte';
   import LevelBar from '../ui/LevelBar.svelte';
@@ -78,4 +79,6 @@
       </button>
     {/each}
   </div>
+
+  <CctvPanel group="bendungan" />
 </div>

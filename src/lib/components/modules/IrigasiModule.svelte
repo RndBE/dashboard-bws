@@ -5,6 +5,7 @@
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 
   import Panel from '../ui/Panel.svelte';
+  import CctvPanel from '../cctv/CctvPanel.svelte';
   import KpiCard from '../ui/KpiCard.svelte';
   import Gauge from '../ui/Gauge.svelte';
   import LevelBar from '../ui/LevelBar.svelte';
@@ -74,7 +75,7 @@
         <tbody>
           {#each d.sumur as s (s.id)}
             {@const draw = s.muka - s.baseline}
-            <tr onclick={() => openDetail('sumur', s.id)} class="cursor-pointer border-b border-line-soft transition-colors hover:bg-white/[0.03]">
+            <tr onclick={() => openDetail('sumur', s.id)} class="cursor-pointer border-b border-line-soft transition-colors hover:bg-[var(--surface-hover)]">
               <td class="px-3.5 py-2.5 font-medium text-ink-strong">{s.name}</td>
               <td class="px-2 py-2.5"><StatusBadge status={s.status} size="xs" dot={false} /></td>
               <td class="px-2 py-2.5 text-right font-mono font-semibold tnum" style="color:{STATUS[s.status].color}">{num(s.muka, 2)}</td>
@@ -87,4 +88,6 @@
       </table>
     </div>
   </Panel>
+
+  <CctvPanel group="irigasi" />
 </div>

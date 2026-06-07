@@ -6,6 +6,7 @@
   import Waves from '@lucide/svelte/icons/waves';
 
   import Panel from '../ui/Panel.svelte';
+  import CctvPanel from '../cctv/CctvPanel.svelte';
   import KpiCard from '../ui/KpiCard.svelte';
   import Gauge from '../ui/Gauge.svelte';
   import LevelBar from '../ui/LevelBar.svelte';
@@ -40,7 +41,7 @@
   <Panel title="Sistem Peringatan Dini Banjir (EWS)" subtitle="TMA terhadap ambang siaga" icon={Siren} flush>
     <div class="divide-y divide-line-soft">
       {#each ews as p (p.id)}
-        <button onclick={() => openDetail('pos', p.id)} class="flex w-full items-center gap-4 px-3.5 py-2.5 text-left transition-colors hover:bg-white/[0.03]">
+        <button onclick={() => openDetail('pos', p.id)} class="flex w-full items-center gap-4 px-3.5 py-2.5 text-left transition-colors hover:bg-[var(--surface-hover)]">
           <Waves size={16} class="shrink-0 text-ink-dim" />
           <div class="w-40 shrink-0">
             <div class="truncate text-[12.5px] font-medium text-ink-strong">{p.name}</div>
@@ -96,4 +97,6 @@
       {/each}
     </div>
   </Panel>
+
+  <CctvPanel group="banjir" />
 </div>

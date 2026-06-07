@@ -10,6 +10,7 @@
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
 
   import Panel from '../ui/Panel.svelte';
+  import CctvPanel from '../cctv/CctvPanel.svelte';
   import KpiCard from '../ui/KpiCard.svelte';
   import Sparkline from '../ui/Sparkline.svelte';
   import Delta from '../ui/Delta.svelte';
@@ -20,6 +21,7 @@
   import DamIcon from '../icons/DamIcon.svelte';
 
   import { data, activeModule, activeAlerts } from '../../stores';
+  import { theme } from '../../theme';
   import { irigasiRatio } from '../../data/derive';
   import { worst, STATUS } from '../../status';
   import { avgSeries, deltaArr } from '../../series';
@@ -125,7 +127,7 @@
     <div class="lg:col-span-2">
       <Panel title="Peta Operasional" subtitle="Status pos pemantauan · klik penanda untuk detail" icon={Map} flush>
         <div class="relative h-[440px] overflow-hidden rounded-b-xl">
-          <BasinMap>
+          <BasinMap light={$theme === 'light'}>
             {#snippet overlay()}
               <MapLegend />
             {/snippet}
@@ -168,4 +170,6 @@
       </button>
     {/each}
   </div>
+
+  <CctvPanel max={6} title="CCTV — Sorotan" />
 </div>

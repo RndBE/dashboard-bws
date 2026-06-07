@@ -1,28 +1,43 @@
 <script lang="ts">
-  // Logo Beacon Engineering versi monokrom putih — dibuat dengan CSS mask
-  // dari PNG aslinya, sehingga seluruh bentuk (ikon + teks) jadi putih solid
-  // dan menyatu dengan latar command-center yang gelap (tanpa plate).
+  // Logo Beacon Engineering.
+  //  - default (mono): CSS mask → siluet 1 warna (putih) untuk latar gelap.
+  //  - colored: PNG asli berwarna (merah + navy) untuk latar terang (light mode).
   interface Props {
     /** tinggi logo dalam px; lebar mengikuti rasio asli */
     height?: number;
-    /** warna isi (default putih) */
+    /** warna isi untuk varian mono (default putih) */
     color?: string;
+    /** tampilkan logo berwarna asli (mis. saat light mode) */
+    colored?: boolean;
   }
-  let { height = 38, color = '#ffffff' }: Props = $props();
+  let { height = 38, color = '#ffffff', colored = false }: Props = $props();
 
   // rasio intrinsik logo 499×148 ≈ 3.37
   const ratio = 499 / 148;
 </script>
 
-<span
-  class="block shrink-0 select-none"
-  role="img"
-  aria-label="Beacon Engineering"
-  style="
-    height:{height}px;
-    width:{height * ratio}px;
-    background-color:{color};
-    -webkit-mask:url(/logo_beacon.png) center / contain no-repeat;
-    mask:url(/logo_beacon.png) center / contain no-repeat;
-  "
-></span>
+{#if colored}
+  <span
+    class="block shrink-0 select-none"
+    role="img"
+    aria-label="Beacon Engineering"
+    style="
+      height:{height}px;
+      width:{height * ratio}px;
+      background:url(/logo_beacon.png) center / contain no-repeat;
+    "
+  ></span>
+{:else}
+  <span
+    class="block shrink-0 select-none"
+    role="img"
+    aria-label="Beacon Engineering"
+    style="
+      height:{height}px;
+      width:{height * ratio}px;
+      background-color:{color};
+      -webkit-mask:url(/logo_beacon.png) center / contain no-repeat;
+      mask:url(/logo_beacon.png) center / contain no-repeat;
+    "
+  ></span>
+{/if}

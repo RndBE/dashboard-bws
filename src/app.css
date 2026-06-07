@@ -46,6 +46,8 @@
 @layer base {
   :root {
     color-scheme: dark;
+    /* tint hover permukaan (dibalik di .theme-light) */
+    --surface-hover: rgba(255, 255, 255, 0.04);
   }
 
   html,
@@ -79,6 +81,42 @@
   .tnum {
     font-variant-numeric: tabular-nums;
   }
+}
+
+/* ============================================================
+   Light mode — KHUSUS tampilan interaktif (videowall tetap gelap).
+   Diterapkan via class .theme-light pada wrapper interaktif (App.svelte).
+   Hanya menimpa token --color-* sehingga seluruh utilitas Tailwind
+   (bg-surface, text-ink-*, border-line, dst.) ikut berubah otomatis,
+   karena semuanya mereferensikan var(--color-*).
+   ============================================================ */
+.theme-light {
+  color-scheme: light;
+
+  --color-bg: #eef2f8;
+  --color-surface: #ffffff;
+  --color-panel: #ffffff;
+  --color-panel-2: #f2f6fb;
+  --color-line: #d9e1ee;
+  --color-line-soft: #e8edf6;
+
+  --color-ink: #33405a;
+  --color-ink-strong: #0f1b2e;
+  --color-ink-muted: #586a86;
+  --color-ink-dim: #8090a6;
+
+  --color-accent-bright: #2f7fda;
+  --color-pu-bright: #b07a08;
+
+  --surface-hover: rgba(15, 23, 42, 0.05);
+
+  background-color: var(--color-bg);
+  background-image:
+    radial-gradient(1100px 560px at 78% -12%, rgba(29, 111, 214, 0.07), transparent 60%),
+    radial-gradient(820px 460px at 6% 112%, rgba(240, 180, 41, 0.05), transparent 55%);
+}
+
+@layer base {
 
   /* Custom scrollbars */
   * {
@@ -159,6 +197,24 @@
 }
 .leaflet-tooltip.bws-tip::before {
   display: none;
+}
+
+/* ---- Leaflet light overrides (hanya tampilan interaktif via .theme-light) ----
+   Popup/tooltip/kontrol sudah memakai var(--color-*) sehingga ikut berubah;
+   sisanya yang masih hardcoded gelap dibalik di sini. */
+.theme-light .leaflet-container {
+  background: #e3e9f1;
+}
+.theme-light .leaflet-control-zoom a:hover {
+  background: var(--color-panel) !important;
+  color: var(--color-ink-strong) !important;
+}
+.theme-light .leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.82) !important;
+}
+/* halo penanda jadi putih agar menonjol di peta terang */
+.theme-light .bws-marker .core {
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.85);
 }
 
 /* Animated map marker */

@@ -20,6 +20,8 @@
     hiddenKinds?: AssetKind[];
     /** jenis instrumen yang dimatikan — aset tampil bila punya ≥1 instrumen aktif */
     hiddenInstruments?: string[];
+    /** gunakan basemap terang (light mode) — default gelap */
+    light?: boolean;
   }
   let {
     overlay,
@@ -29,7 +31,13 @@
     wall = false,
     hiddenKinds = [],
     hiddenInstruments = [],
+    light = false,
   }: Props = $props();
+
+  const TILE = {
+    dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+  };
 
   /** lolos filter bila kategori aset aktif & punya ≥1 instrumen aktif */
   function pass(m: MapMarker): boolean {
@@ -43,9 +51,22 @@
 
   let el: HTMLDivElement;
   let map: L.Map | undefined;
+  let tileLayer: L.TileLayer | undefined;
+  let currentLight: boolean | undefined;
   const layer = L.layerGroup();
   const reg = new Map<string, { marker: L.Marker; status: string; focused: boolean }>();
   let focusedId: string | null = null;
+
+  function applyTiles(isLight: boolean) {
+    if (!map) return;
+    if (tileLayer) tileLayer.remove();
+    tileLayer = L.tileLayer(isLight ? TILE.light : TILE.dark, {
+      attribution: '&copy; OpenStreetMap &copy; CARTO',
+      subdomains: 'abcd',
+      maxZoom: 19,
+    }).addTo(map);
+    currentLight = isLight;
+  }
 
   function iconFor(m: MapMarker, focused = false) {
     const color = statusColor(m.status);
@@ -128,15 +149,7 @@
       keyboard: interactive,
       touchZoom: interactive,
     });
-    L.tileLayer(
-      'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-      {
-        attribution:
-          '&copy; OpenStreetMap &copy; CARTO',
-        subdomains: 'abcd',
-        maxZoom: 19,
-      },
-    ).addTo(map);
+    applyTiles(light);
     layer.addTo(map);
 
     const unsub = markers.subscribe((ms) => sync(ms));
@@ -188,6 +201,12 @@
     void hiddenKinds;
     void hiddenInstruments;
     if (map) sync(latest);
+  });
+
+  // ganti basemap saat tema berubah (light/dark)
+  $effect(() => {
+    const isLight = light;
+    if (map && isLight !== currentLight) applyTiles(isLight);
   });
 </script>
 

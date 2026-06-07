@@ -36,7 +36,7 @@
         cy={size / 2}
         {r}
         fill="none"
-        stroke="#1c2740"
+        style="stroke:var(--color-line)"
         stroke-width={sw}
       />
       <circle

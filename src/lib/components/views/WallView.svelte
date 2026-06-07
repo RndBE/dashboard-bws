@@ -20,6 +20,7 @@
 
   import BasinMap from '../map/BasinMap.svelte';
   import WallMapControls from '../map/WallMapControls.svelte';
+  import WallCctvPanel from '../cctv/WallCctvPanel.svelte';
   import Logo from '../layout/Logo.svelte';
   import DamIcon from '../icons/DamIcon.svelte';
   import Sparkline from '../ui/Sparkline.svelte';
@@ -406,6 +407,9 @@
           {/each}
         </div>
       </section>
+
+      <!-- CCTV: grid 2×2 berputar -->
+      <WallCctvPanel />
     </aside>
 
   <!-- ════════ DOCK BAWAH: KPI + ticker (mengambang) ════════ -->

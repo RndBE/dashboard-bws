@@ -505,7 +505,7 @@
               <tbody>
                 {#if chartSeries.length}
                   {#each chartSeries[0].points as p, i}
-                    <tr class="border-b border-line-soft hover:bg-white/[0.03]">
+                    <tr class="border-b border-line-soft hover:bg-[var(--surface-hover)]">
                       <td class="px-3.5 py-1.5 font-mono text-ink-dim">{new Date(p.t).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
                       {#each chartSeries as s, si}
                         <td class="px-2.5 py-1.5 text-right font-mono text-ink tnum" style={si === 0 ? '' : ''}>
@@ -542,7 +542,7 @@
             </thead>
             <tbody>
               {#each perStats as s (s.row.id)}
-                <tr onclick={() => openDetail(category, s.row.id)} class="cursor-pointer border-b border-line-soft transition-colors hover:bg-white/[0.03]">
+                <tr onclick={() => openDetail(category, s.row.id)} class="cursor-pointer border-b border-line-soft transition-colors hover:bg-[var(--surface-hover)]">
                   <td class="px-3.5 py-2">
                     <div class="flex items-center gap-1.5">
                       <span class="h-2.5 w-2.5 shrink-0 rounded-sm" style="background:{s.color}"></span>

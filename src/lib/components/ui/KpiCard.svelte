@@ -29,7 +29,7 @@
   {onclick}
   role={onclick ? 'button' : undefined}
   tabindex={onclick ? 0 : undefined}
-  class="relative flex flex-col overflow-hidden rounded-xl border border-line bg-panel-2 px-3.5 py-3 text-left transition-colors {onclick
+  class="relative flex flex-col overflow-hidden rounded-xl border border-line bg-surface px-3.5 py-3 text-left transition-colors {onclick
     ? 'cursor-pointer hover:border-accent/40 hover:bg-panel'
     : ''} {klass}"
 >

@@ -114,7 +114,7 @@
         x2={w - padR}
         y1={g.y(tv)}
         y2={g.y(tv)}
-        stroke="#1c2740"
+        style="stroke:var(--color-line)"
         stroke-width="1"
         stroke-dasharray="2 4"
       />

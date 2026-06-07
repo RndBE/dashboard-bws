@@ -26,7 +26,7 @@
     {#each $activeAlerts.slice(0, max) as a (a.id)}
       <button
         onclick={() => openDetail(a.kind, a.assetId)}
-        class="group flex items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left transition-colors hover:bg-white/[0.03]"
+        class="group flex items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left transition-colors hover:bg-[var(--surface-hover)]"
         style="border-color:{STATUS[a.level].color}44;background:{STATUS[a.level]
           .color}0f"
       >

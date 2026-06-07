@@ -29,7 +29,7 @@
       'bg-accent/10 text-accent-bright border-accent/35 hover:bg-accent/20 hover:border-accent/60',
     gold: 'bg-gold/10 text-gold border-gold/35 hover:bg-gold/20 hover:border-gold/60',
     ghost:
-      'bg-transparent text-ink-muted border-line hover:bg-white/[0.04] hover:text-ink-strong',
+      'bg-transparent text-ink-muted border-line hover:bg-[var(--surface-hover)] hover:text-ink-strong',
     subtle:
       'bg-surface text-ink border-line hover:bg-panel hover:text-ink-strong',
   };
