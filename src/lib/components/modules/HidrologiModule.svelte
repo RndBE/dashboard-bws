@@ -5,13 +5,16 @@
   import Gauge from '@lucide/svelte/icons/gauge';
   import Table from '@lucide/svelte/icons/table-2';
 
+  import Droplets from '@lucide/svelte/icons/droplets';
+  import ArrowRight from '@lucide/svelte/icons/arrow-right';
+
   import Panel from '../ui/Panel.svelte';
   import CctvPanel from '../cctv/CctvPanel.svelte';
   import KpiCard from '../ui/KpiCard.svelte';
   import Sparkline from '../ui/Sparkline.svelte';
   import MiniChart from '../ui/MiniChart.svelte';
   import StatusBadge from '../ui/StatusBadge.svelte';
-  import { data, openDetail } from '../../stores';
+  import { data, openDetail, openHydro } from '../../stores';
   import { STATUS, POS_TIPE_LABEL } from '../../status';
   import { num, relTime } from '../../format';
   import { clock } from '../../stores';
@@ -35,6 +38,28 @@
 </script>
 
 <div class="flex flex-col gap-3">
+  <!-- Toggle: buka Portal Hidrologi (sub-aplikasi telemetri lengkap) -->
+  <button
+    onclick={() => openHydro()}
+    class="group relative flex items-center gap-3 overflow-hidden rounded-xl border border-accent/30 bg-gradient-to-r from-accent/12 via-accent/6 to-transparent px-4 py-3 text-left transition-colors hover:border-accent/55 hover:from-accent/20"
+  >
+    <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-accent/40 bg-accent/15 text-accent-bright">
+      <Droplets size={22} />
+    </span>
+    <div class="min-w-0 flex-1">
+      <div class="flex items-center gap-2">
+        <span class="text-[13.5px] font-semibold text-ink-strong">Portal Hidrologi &amp; Telemetri</span>
+        <span class="rounded-full border border-accent/40 bg-accent/10 px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide text-accent-bright">Sub-sistem</span>
+      </div>
+      <p class="truncate text-[11px] text-ink-muted">
+        Halaman khusus: Pos Duga Air, Debit &amp; Flowmeter, Curah Hujan, Kualitas Air, Mata Air, dan CCTV IP Publik terintegrasi.
+      </p>
+    </div>
+    <span class="flex shrink-0 items-center gap-1.5 rounded-lg border border-accent/40 bg-accent/10 px-3 py-2 text-[12px] font-medium text-accent-bright transition-transform group-hover:translate-x-0.5">
+      Buka Portal <ArrowRight size={15} />
+    </span>
+  </button>
+
   <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
     <KpiCard label="Pos dipantau" value={String(d.pos.length)} unit="pos" icon={Gauge}>
       {#snippet footer()}

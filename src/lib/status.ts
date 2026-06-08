@@ -90,9 +90,10 @@ export const KIND_LABEL: Record<AssetKind, string> = {
 /** label per tipe pos */
 export const POS_TIPE_LABEL: Record<PosTipe, string> = {
   'duga-air': 'Pos Duga Air',
-  hujan: 'Pos Hujan',
+  hujan: 'Pos Curah Hujan',
   klimatologi: 'Stasiun Klimatologi',
   kualitas: 'Pos Kualitas Air',
+  'mata-air': 'Pos Mata Air',
 };
 
 /** akronim logger per tipe pos */
@@ -101,4 +102,5 @@ export const POS_TIPE_LOGGER: Record<PosTipe, string> = {
   hujan: 'ARR',
   klimatologi: 'AWS',
   kualitas: 'AWQR',
+  'mata-air': 'ASDR',
 };

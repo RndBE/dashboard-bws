@@ -128,10 +128,40 @@ function solar(id: string, now: number): Instrument {
   });
 }
 
-/** Pos Duga Air (AWLR) — TMA; debit turunan rating curve */
-function dugaAirInstruments(p: { id: string; tma: number }, now: number): Instrument[] {
+/** Pos Duga Air (AWLR) — TMA; debit real-time dari flowmeter & rating curve */
+function dugaAirInstruments(
+  p: { id: string; tma: number; debit: number },
+  now: number,
+): Instrument[] {
+  // perkiraan kecepatan aliran rata-rata (m/s) dari debit (kasar, utk tampilan)
+  const vel = Math.max(0.2, Math.min(3.2, p.debit / 90 + 0.3));
   return withFault([
     inst(p.id, 'TMA', 'TMA — Pencatat Muka Air Otomatis (AWLR)', p.tma, 'm', now, { primary: true, digits: 2, amp: 1.6, noise: 0.12 }),
+    inst(p.id, 'AFMR', 'AFMR — Flowmeter Ultrasonik Non-Kontak (Debit)', p.debit, 'm³/s', now, { digits: 1, amp: p.debit * 0.3 + 2, noise: p.debit * 0.05 + 0.4, min: 0 }),
+    inst(p.id, 'Kecepatan Aliran', 'Sensor Kecepatan Permukaan Ultrasonik (Non-Kontak)', vel, 'm/s', now, { digits: 2, amp: 0.6, noise: 0.12, min: 0 }),
+    inst(p.id, 'AWQR', 'AWQR — pH Mutu Air Sungai', 6.9 + Math.random() * 0.9, 'pH', now, { digits: 2, amp: 0.3, noise: 0.08, min: 5.5 }),
+    solar(p.id, now),
+  ]);
+}
+
+/**
+ * Pos Mata Air (ASDR — Automatic Spring Discharge Recorder).
+ * Parameter utama = debit mata air (l/dt), diukur flowmeter ultrasonik non-kontak
+ * di atas ambang ukur V-Notch. Karena mata air jadi sumber air baku, tiap titik
+ * dilengkapi AWQR (Automatic Water Quality Recorder) lengkap: pH, DO, kekeruhan,
+ * TDS, konduktivitas (EC), dan suhu air.
+ */
+function mataAirInstruments(p: { id: string; debit: number }, now: number): Instrument[] {
+  return withFault([
+    inst(p.id, 'Debit Mata Air', 'ASDR — Flowmeter Ultrasonik Non-Kontak (Ambang V-Notch)', p.debit, 'l/dt', now, { primary: true, digits: 1, amp: p.debit * 0.25 + 1, noise: p.debit * 0.04 + 0.2, min: 0 }),
+    inst(p.id, 'Tinggi Bukaan', 'Tinggi Limpasan Ambang Ukur (Ultrasonik)', 6 + Math.random() * 10, 'cm', now, { digits: 1, amp: 3, noise: 0.8, min: 0 }),
+    // --- AWQR — Automatic Water Quality Recorder (mutu air baku) ---
+    inst(p.id, 'pH', 'AWQR — pH Air Baku', 6.9 + Math.random() * 0.9, 'pH', now, { digits: 2, amp: 0.25, noise: 0.06, min: 5.5 }),
+    inst(p.id, 'DO', 'AWQR — Oksigen Terlarut (DO)', 5.5 + Math.random() * 3, 'mg/L', now, { digits: 1, amp: 1, noise: 0.3, min: 0 }),
+    inst(p.id, 'Kekeruhan', 'AWQR — Kekeruhan', 2 + Math.random() * 14, 'NTU', now, { digits: 0, amp: 6, noise: 2, min: 0 }),
+    inst(p.id, 'TDS', 'AWQR — Zat Padat Terlarut (TDS)', 90 + Math.random() * 160, 'mg/L', now, { digits: 0, amp: 30, noise: 10, min: 0 }),
+    inst(p.id, 'Konduktivitas', 'AWQR — Konduktivitas Listrik (EC)', 180 + Math.random() * 220, 'µS/cm', now, { digits: 0, amp: 40, noise: 12, min: 0 }),
+    inst(p.id, 'Suhu Air', 'AWQR — Suhu Air', 23 + Math.random() * 4, '°C', now, { digits: 1, amp: 1.2, noise: 0.3, min: 18 }),
     solar(p.id, now),
   ]);
 }
@@ -177,6 +207,7 @@ const POS_PARAM_KEY: Record<PosTipe, string> = {
   hujan: 'hujan',
   klimatologi: 'suhu',
   kualitas: 'ph',
+  'mata-air': 'debit-ma',
 };
 
 interface PosSeedBase {
@@ -197,12 +228,14 @@ interface PosSeedBase {
 function buildPos(base: PosSeedBase, now: number): PosHidrologi {
   const instruments =
     base.tipe === 'duga-air'
-      ? dugaAirInstruments({ id: base.id, tma: base.tma ?? 1 }, now)
+      ? dugaAirInstruments({ id: base.id, tma: base.tma ?? 1, debit: base.debit ?? 0 }, now)
       : base.tipe === 'hujan'
         ? hujanInstruments({ id: base.id, hujan: base.hujan ?? 0 }, now)
         : base.tipe === 'klimatologi'
           ? klimatologiInstruments({ id: base.id }, now)
-          : kualitasInstruments({ id: base.id }, now);
+          : base.tipe === 'mata-air'
+            ? mataAirInstruments({ id: base.id, debit: base.debit ?? 0 }, now)
+            : kualitasInstruments({ id: base.id }, now);
   const prim = instruments.find((i) => i.primary) ?? instruments[0];
   const pos: PosHidrologi = {
     id: base.id,
@@ -220,7 +253,8 @@ function buildPos(base: PosSeedBase, now: number): PosHidrologi {
     },
     history: prim.history,
     thresholds: base.thresholds,
-    debit: base.debit,
+    // pos.debit hanya untuk duga air (rating curve). Mata air memakai param utama.
+    debit: base.tipe === 'mata-air' ? undefined : base.debit,
     status: 'normal',
     updatedAt: now - Math.floor(Math.random() * 90_000),
     instruments,
@@ -408,6 +442,12 @@ export function buildData(now: number): DashboardData {
     // Pos Kualitas Air (AWQR) — status mutu air
     { id: 'awqr-cigaru-hilir', name: 'Pos Kualitas Air Cigaru', tipe: 'kualitas', river: 'S. Cigaru', lat: -6.6, lng: 106.15 },
     { id: 'awqr-cibanten', name: 'Pos Kualitas Air Cibanten', tipe: 'kualitas', river: 'S. Cibanten', lat: -6.33, lng: 106.03 },
+    // Pos Mata Air (ASDR) — debit mata air; ambang dibaca menurun (kekeringan)
+    { id: 'ma-cikoromoy', name: 'Mata Air Cikoromoy', tipe: 'mata-air', river: 'Cadasari', lat: -6.34, lng: 106.08, debit: 18.6, thresholds: { waspada: 12, siaga: 8, awas: 5 } },
+    { id: 'ma-cisuren', name: 'Mata Air Cisuren', tipe: 'mata-air', river: 'Pandeglang', lat: -6.58, lng: 106.27, debit: 23.4, thresholds: { waspada: 14, siaga: 9, awas: 6 } },
+    { id: 'ma-cibulakan', name: 'Mata Air Cibulakan', tipe: 'mata-air', river: 'Cimanuk', lat: -6.51, lng: 106.04, debit: 9.4, thresholds: { waspada: 10, siaga: 7, awas: 4 } },
+    { id: 'ma-cigentur', name: 'Mata Air Cigentur', tipe: 'mata-air', river: 'Cikawung', lat: -6.43, lng: 106.31, debit: 6.2, thresholds: { waspada: 8, siaga: 5, awas: 3 } },
+    { id: 'ma-citaman', name: 'Mata Air Citaman', tipe: 'mata-air', river: 'Cisata', lat: -6.66, lng: 106.18, debit: 4.6, thresholds: { waspada: 9, siaga: 6, awas: 3.5 } },
   ];
 
   const pos: PosHidrologi[] = posSeed.map((b) => buildPos(b, now));

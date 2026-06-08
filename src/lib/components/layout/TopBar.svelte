@@ -7,10 +7,11 @@
   import LogOut from '@lucide/svelte/icons/log-out';
   import Sun from '@lucide/svelte/icons/sun';
   import Moon from '@lucide/svelte/icons/moon';
+  import Droplets from '@lucide/svelte/icons/droplets';
   import Logo from './Logo.svelte';
   import Clock from '../ui/Clock.svelte';
   import StatusBadge from '../ui/StatusBadge.svelte';
-  import { mode, paused, overallStatus, activeAlerts } from '../../stores';
+  import { mode, paused, overallStatus, activeAlerts, openHydro } from '../../stores';
   import { theme, toggleTheme } from '../../theme';
   import { auth, requestLogout } from '../../auth';
   import { BALAI_NAME } from '../../data/seed';
@@ -68,6 +69,15 @@
       class="grid h-8 w-8 place-items-center rounded-lg border border-line text-ink-muted transition-colors hover:bg-panel hover:text-ink-strong"
     >
       {#if $theme === 'dark'}<Sun size={14} />{:else}<Moon size={14} />{/if}
+    </button>
+
+    <!-- Portal Hidrologi: buka sub-aplikasi telemetri hidrologi -->
+    <button
+      onclick={() => openHydro()}
+      title="Buka Portal Hidrologi"
+      class="flex items-center gap-1.5 rounded-lg border border-accent/35 bg-accent/10 px-2.5 py-1.5 text-[11px] font-medium text-accent-bright transition-colors hover:border-accent/60 hover:bg-accent/20"
+    >
+      <Droplets size={14} /> <span class="hidden lg:inline">Portal Hidrologi</span>
     </button>
 
     <!-- Mode toggle -->

@@ -9,6 +9,8 @@
   import LoginView from './lib/components/views/LoginView.svelte';
   import LogoutModal from './lib/components/ui/LogoutModal.svelte';
 
+  import HydroPortal from './lib/components/hydro/HydroPortal.svelte';
+
   import OverviewModule from './lib/components/modules/OverviewModule.svelte';
   import HidrologiModule from './lib/components/modules/HidrologiModule.svelte';
   import BendunganModule from './lib/components/modules/BendunganModule.svelte';
@@ -56,6 +58,10 @@
 
 {#if !$auth}
   <LoginView />
+{:else if $mode === 'hydro'}
+  <!-- Portal Hidrologi: sub-aplikasi terpisah dengan header & sidebar sendiri -->
+  <HydroPortal />
+  <LogoutModal />
 {:else}
   <div
     class="flex h-screen flex-col overflow-hidden {$theme === 'light' && $mode !== 'wall'

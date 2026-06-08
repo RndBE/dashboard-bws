@@ -194,6 +194,7 @@ export const PARAMS: Record<CategoryKey, ParamDef[]> = {
     { key: 'hujan', label: 'Curah Hujan · Pos Hujan', unit: 'mm', digits: 1, color: '#c9a227', badWhen: 'up', zeroBased: true },
     { key: 'suhu', label: 'Suhu Udara · Klimatologi', unit: '°C', digits: 1, color: '#e08a4f', badWhen: 'none' },
     { key: 'ph', label: 'pH · Kualitas Air', unit: 'pH', digits: 1, color: '#7c5cff', badWhen: 'none' },
+    { key: 'debit-ma', label: 'Debit · Mata Air', unit: 'l/dt', digits: 1, color: '#3fb27f', badWhen: 'down', zeroBased: true },
   ],
   bendungan: [
     { key: 'elevasi', label: 'Elevasi Waduk', unit: 'mdpl', digits: 2, color: '#4f9bee', badWhen: 'up' },
