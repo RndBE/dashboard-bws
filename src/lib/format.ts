@@ -9,11 +9,13 @@ const nf = (digits: number) =>
 const f0 = nf(0);
 const f1 = nf(1);
 const f2 = nf(2);
+const f3 = nf(3);
 
 export function num(value: number, digits = 1): string {
   if (!Number.isFinite(value)) return '–';
   if (digits === 0) return f0.format(value);
   if (digits === 2) return f2.format(value);
+  if (digits === 3) return f3.format(value);
   return f1.format(value);
 }
 

@@ -1,25 +1,25 @@
 // Konfigurasi pm2 untuk menyajikan hasil build (folder dist/) sebagai SPA.
+// Server Node juga menyediakan endpoint /api/chat agar OPENAI_API_KEY tetap
+// berada di server, bukan di bundle browser.
 //
 // Pakai:
 //   npm run build
 //   pm2 start ecosystem.config.cjs
 //
-// PM2_SERVE_SPA='true' membuat semua request yang bukan file fisik diarahkan
-// ke index.html — wajib agar clean URL (mis. /bendungan/bend-cigaru) tidak 404
-// saat di-refresh atau dibuka langsung. nginx tinggal reverse-proxy ke PORT
-// di bawah (proxy_pass http://localhost:4780), tanpa aturan rewrite khusus.
+// nginx tinggal reverse-proxy ke PORT di bawah
+// (proxy_pass http://localhost:4781), tanpa aturan rewrite khusus.
 //
 // File berekstensi .cjs karena package.json memakai "type": "module".
 module.exports = {
   apps: [
     {
       name: 'allinone',
-      script: 'serve',
+      script: 'server/index.js',
+      interpreter: 'node',
       env: {
-        PM2_SERVE_PATH: 'dist',
-        PM2_SERVE_PORT: 4781,
-        PM2_SERVE_SPA: 'true',
-        PM2_SERVE_HOMEPAGE: '/index.html',
+        PORT: 4781,
+        STATIC_DIR: 'dist',
+        OPENAI_MODEL: 'gpt-5.5',
       },
     },
   ],

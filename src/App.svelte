@@ -8,6 +8,8 @@
   import AssetDetailPage from './lib/components/views/AssetDetailPage.svelte';
   import LoginView from './lib/components/views/LoginView.svelte';
   import LogoutModal from './lib/components/ui/LogoutModal.svelte';
+  import InteractiveChatbot from './lib/components/chat/InteractiveChatbot.svelte';
+  import GeothermalShell from './lib/components/geothermal/GeothermalShell.svelte';
 
   import HydroPortal from './lib/components/hydro/HydroPortal.svelte';
 
@@ -18,10 +20,11 @@
   import BanjirModule from './lib/components/modules/BanjirModule.svelte';
   import AnalisaModule from './lib/components/modules/AnalisaModule.svelte';
 
-  import { mode, activeModule, selected, startSimulation } from './lib/stores';
+  import { activeAlerts, activeModule, mode, overallStatus, selected, startSimulation, system } from './lib/stores';
   import { startRouter } from './lib/router';
   import { auth } from './lib/auth';
   import { theme } from './lib/theme';
+  import { startGeoSimulation } from './lib/geothermal/store';
   import type { ModuleKey } from './lib/types';
 
   const MODULES: Record<ModuleKey, any> = {
@@ -44,6 +47,7 @@
   onMount(() => {
     const stopRouter = startRouter();
     const stopSim = startSimulation();
+    const stopGeo = startGeoSimulation();
     const mq = window.matchMedia(LARGE_MQ);
     isLargeScreen = mq.matches;
     const onMq = (e: MediaQueryListEvent) => (isLargeScreen = e.matches);
@@ -51,6 +55,7 @@
     return () => {
       stopRouter();
       stopSim();
+      stopGeo();
       mq.removeEventListener('change', onMq);
     };
   });
@@ -58,6 +63,8 @@
 
 {#if !$auth}
   <LoginView />
+{:else if $system === 'geothermal'}
+  <GeothermalShell />
 {:else if $mode === 'hydro'}
   <!-- Portal Hidrologi: sub-aplikasi terpisah dengan header & sidebar sendiri -->
   <HydroPortal />
@@ -101,6 +108,9 @@
           {/key}
         </div>
       </main>
+    {/if}
+    {#if $mode !== 'wall'}
+      <InteractiveChatbot activeAlerts={$activeAlerts} overallStatus={$overallStatus} />
     {/if}
     <LogoutModal />
   </div>

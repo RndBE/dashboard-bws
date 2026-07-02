@@ -9,7 +9,7 @@
 // perubahan store → URL dan tombol back/forward (popstate) → store.
 
 import { get } from 'svelte/store';
-import { activeModule, hydroSection, mode, selected } from './stores';
+import { activeModule, hydroSection, mode, selected, system } from './stores';
 import type { AssetKind, HydroSection, ModuleKey } from './types';
 
 const MODULES: ModuleKey[] = [
@@ -41,6 +41,7 @@ const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 /** Bentuk path internal (relatif terhadap BASE) dari state saat ini. */
 function pathFromState(): string {
+  if (get(system) === 'geothermal') return '/geothermal';
   if (get(mode) === 'wall') return '/wall';
   // Portal Hidrologi: sub-aplikasi dengan URL sendiri (mis. /hidro/pda)
   if (get(mode) === 'hydro') return `/hidro/${get(hydroSection)}`;
@@ -83,6 +84,14 @@ function applyUrl() {
 
   suppress = true;
   try {
+    // /geothermal → sub-sistem geothermal
+    if (parts[0] === 'geothermal') {
+      system.set('geothermal');
+      return;
+    }
+    // path lain → sub-sistem STESY
+    system.set('stesy');
+
     // /wall → mode videowall
     if (parts[0] === 'wall') {
       mode.set('wall');
@@ -147,6 +156,7 @@ export function startRouter(): () => void {
     mode.subscribe(writeUrl),
     hydroSection.subscribe(writeUrl),
     selected.subscribe(writeUrl),
+    system.subscribe(writeUrl),
   ];
   // mulai sekarang navigasi nyata memakai pushState (mendukung back/forward)
   initialSync = false;

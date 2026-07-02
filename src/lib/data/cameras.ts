@@ -6,7 +6,7 @@
 // Sistem CCTV ini dirancang terintegrasi web & berbasis IP Publik: tiap kamera
 // punya alamat IP publik + stream RTSP/HLS sehingga dapat diakses lintas
 // instansi tanpa VPN. Metadata stream disintesis dari `ip` (lihat camStream).
-export type CameraGroup = 'bendungan' | 'hidrologi' | 'irigasi' | 'banjir';
+export type CameraGroup = 'bendungan' | 'hidrologi' | 'irigasi' | 'banjir' | 'geothermal';
 
 export interface Camera {
   id: string;

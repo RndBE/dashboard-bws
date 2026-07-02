@@ -28,6 +28,7 @@ const START = Date.now();
 export const clock = writable<number>(START);
 /** dashboard = tampilan interaktif · wall = layar dinding · hydro = Portal Hidrologi */
 export const mode = writable<'dashboard' | 'wall' | 'hydro'>('dashboard');
+export const system = writable<'stesy' | 'geothermal'>('stesy');
 export const activeModule = writable<ModuleKey>('ringkasan');
 /** menu aktif di dalam Portal Hidrologi */
 export const hydroSection = writable<HydroSection>('beranda');
