@@ -2,7 +2,7 @@
 // Gambar disimpan lokal di public/cctv/<id>.jpg (foto infrastruktur air yang
 // relevan, lisensi bebas dari Wikimedia Commons) — jelas & tanpa ketergantungan
 // sumber acak/eksternal saat runtime.
-export type CameraGroup = 'bendungan' | 'hidrologi' | 'irigasi' | 'banjir';
+export type CameraGroup = 'bendungan' | 'hidrologi' | 'irigasi' | 'banjir' | 'geothermal';
 
 export interface Camera {
   id: string;

@@ -4,6 +4,7 @@ import {
   WEIR_H0, WEIR_Q0, weirFlowLs, lsToM3h, r2, clamp, nudge, RANGES,
   stepTelemetry, worstStatus, sensorState, activeAlarmCount,
 } from '../src/lib/geothermal/wellpad.js';
+import { SEED_TELEMETRY } from '../src/lib/geothermal/seed.js';
 
 test('weir flow hits the mockup anchor exactly', () => {
   assert.ok(Math.abs(weirFlowLs(WEIR_H0) - WEIR_Q0) < 1e-9);
@@ -66,4 +67,9 @@ test('activeAlarmCount counts only active rows', () => {
   assert.equal(activeAlarmCount([
     { status: 'active' }, { status: 'cleared' }, { status: 'active' },
   ]), 2);
+});
+
+test('seed flow is consistent with seed level via the weir', () => {
+  assert.equal(SEED_TELEMETRY.flowLs, r2(weirFlowLs(SEED_TELEMETRY.level)));
+  assert.equal(SEED_TELEMETRY.flowM3h, r2(lsToM3h(SEED_TELEMETRY.flowLs)));
 });
