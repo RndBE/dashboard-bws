@@ -1,6 +1,6 @@
 <script lang="ts">
-  interface Props { value: number; min: number; max: number; color?: string; size?: number; }
-  let { value, min, max, color = '#4f9bee', size = 150 }: Props = $props();
+  interface Props { value: number; min: number; max: number; color?: string; }
+  let { value, min, max, color = '#4f9bee' }: Props = $props();
 
   const R = 62;
   const CX = 80;
@@ -19,7 +19,7 @@
   const frac = $derived(Math.max(0, Math.min(1, (value - min) / (max - min))));
 </script>
 
-<svg width={size} height={size * 0.62} viewBox="0 0 160 92">
+<svg width="160" height="92" viewBox="0 0 160 92">
   <path d={arc(0, 1)} fill="none" stroke="var(--color-line)" stroke-width="9" stroke-linecap="round" />
   <path d={arc(0, frac)} fill="none" stroke={color} stroke-width="9" stroke-linecap="round" />
   <text x="18" y="90" class="fill-current text-ink-dim" font-size="8">{min}</text>

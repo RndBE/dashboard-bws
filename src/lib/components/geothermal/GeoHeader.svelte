@@ -9,6 +9,7 @@
   import StatusBadge from '../ui/StatusBadge.svelte';
   import SystemSwitcher from '../layout/SystemSwitcher.svelte';
   import { geoActiveAlarmCount, geoOverallStatus } from '../../geothermal/store';
+  import { STATUS } from '../../status';
 
   const ACTIONS = [
     { icon: Bell, label: 'Alarm', badge: true },
@@ -28,7 +29,7 @@
   </div>
 
   <div class="ml-2 hidden items-center gap-2 md:flex">
-    <StatusBadge status={$geoOverallStatus} label="System Normal" pulse={$geoOverallStatus !== 'normal'} />
+    <StatusBadge status={$geoOverallStatus} label={$geoOverallStatus === 'normal' ? 'System Normal' : STATUS[$geoOverallStatus].label} pulse={$geoOverallStatus !== 'normal'} />
   </div>
 
   <div class="ml-auto flex items-center gap-3">

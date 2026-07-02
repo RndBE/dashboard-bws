@@ -9,6 +9,6 @@
     <span class="flex items-center gap-1 text-[10px] font-semibold text-normal"><span class="h-1.5 w-1.5 rounded-full bg-normal"></span>Live</span>
   </div>
   <div class="grid grid-cols-2 gap-2">
-    {#each GEO_CAMERAS as cam}<CameraTile {cam} compact />{/each}
+    {#each GEO_CAMERAS as cam (cam.id)}<CameraTile {cam} compact />{/each}
   </div>
 </div>

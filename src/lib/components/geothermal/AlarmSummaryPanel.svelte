@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { geoActiveAlarmCount } from '../../geothermal/store';
-  import { geoAlarms } from '../../geothermal/store';
+  import { geoActiveAlarmCount, geoAlarms } from '../../geothermal/store';
 </script>
 
 <div class="rounded-xl border border-line bg-panel p-3">
