@@ -21,6 +21,7 @@
   import BasinMap from '../map/BasinMap.svelte';
   import WallMapControls from '../map/WallMapControls.svelte';
   import WallCctvPanel from '../cctv/WallCctvPanel.svelte';
+  import WallChatbot from '../chat/WallChatbot.svelte';
   import Logo from '../layout/Logo.svelte';
   import DamIcon from '../icons/DamIcon.svelte';
   import Sparkline from '../ui/Sparkline.svelte';
@@ -464,4 +465,6 @@
       </span>
     </div>
   </div>
+
+  <WallChatbot activeAlerts={$activeAlerts} overallStatus={$overallStatus} />
 </div>

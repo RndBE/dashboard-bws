@@ -50,34 +50,57 @@ Warna status diredam agar terbaca jelas. Tombol bergaya _soft/tinted_.
 npm install
 npm run dev       # http://localhost:5173
 npm run build     # build produksi → dist/
+npm start         # serve dist/ + endpoint /api/chat di :4781
 npm run preview   # preview hasil build
+npm test          # unit test helper chatbot
 npm run check     # type-check (svelte-check + tsc)
 ```
+
+### Chatbot GPT
+
+Chatbot GPT di Layar Dinding memakai endpoint server-side `POST /api/chat`, jadi
+secret OpenAI tidak pernah dikirim ke browser. Set environment berikut sebelum
+menjalankan server:
+
+```bash
+export OPENAI_API_KEY="sk-..."
+export OPENAI_MODEL="gpt-5.5"   # opsional
+npm run build
+npm start
+```
+
+Untuk development dengan Vite, jalankan API server dan Vite di dua terminal:
+
+```bash
+OPENAI_API_KEY="sk-..." npm run dev:api
+npm run dev
+```
+
+Di videowall, aktifkan tombol mic satu kali agar browser meminta izin mikrofon.
+Setelah voice standby, chat dapat dipanggil dengan frasa seperti
+`STESY buka chat` dan disembunyikan dengan `STESY tutup chat`.
 
 ## Deploy (VPS + pm2)
 
 Routing memakai **History API** → URL bersih (mis. `/bendungan/bend-cigaru`,
-tanpa `#`). Konsekuensinya server harus mengarahkan semua path ke `index.html`
-(SPA fallback), kalau tidak refresh/buka-link-langsung akan 404. pm2 sudah
-menyediakannya lewat opsi `--spa`:
+tanpa `#`). `server/index.js` mengarahkan path non-file ke `index.html`
+(SPA fallback) dan menyediakan endpoint `/api/chat`.
 
 ```bash
+export OPENAI_API_KEY="sk-..."
 npm run build                 # → dist/
-pm2 start ecosystem.config.cjs    # serve dist/ di :8080 dengan SPA fallback
-# atau manual:  pm2 serve dist 8080 --spa
+pm2 start ecosystem.config.cjs # serve dist/ + /api/chat di :4781
+# atau manual:  OPENAI_API_KEY="sk-..." npm start
 ```
 
 nginx tinggal reverse-proxy ke port tersebut — **tanpa aturan rewrite khusus**:
 
 ```nginx
 location / {
-    proxy_pass http://localhost:8080;
+    proxy_pass http://localhost:4781;
     proxy_set_header Host $host;
 }
 ```
-
-> Alternatif tanpa pm2: serve `dist/` langsung dari nginx dan tambahkan
-> `try_files $uri /index.html;` di blok `location /`.
 
 ## Struktur
 
