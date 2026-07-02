@@ -10,6 +10,7 @@
   import Logo from './Logo.svelte';
   import Clock from '../ui/Clock.svelte';
   import StatusBadge from '../ui/StatusBadge.svelte';
+  import SystemSwitcher from './SystemSwitcher.svelte';
   import { mode, paused, overallStatus, activeAlerts } from '../../stores';
   import { theme, toggleTheme } from '../../theme';
   import { auth, requestLogout } from '../../auth';
@@ -69,6 +70,8 @@
     >
       {#if $theme === 'dark'}<Sun size={14} />{:else}<Moon size={14} />{/if}
     </button>
+
+    <SystemSwitcher />
 
     <!-- Mode toggle -->
     <div class="flex items-center rounded-lg border border-line bg-panel-2 p-0.5">
