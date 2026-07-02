@@ -9,7 +9,7 @@
 // perubahan store → URL dan tombol back/forward (popstate) → store.
 
 import { get } from 'svelte/store';
-import { activeModule, mode, selected } from './stores';
+import { activeModule, mode, selected, system } from './stores';
 import type { AssetKind, ModuleKey } from './types';
 
 const MODULES: ModuleKey[] = [
@@ -30,6 +30,7 @@ const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 /** Bentuk path internal (relatif terhadap BASE) dari state saat ini. */
 function pathFromState(): string {
+  if (get(system) === 'geothermal') return '/geothermal';
   if (get(mode) === 'wall') return '/wall';
   const sel = get(selected);
   if (sel) return `/${sel.kind}/${sel.id}`;
@@ -70,6 +71,14 @@ function applyUrl() {
 
   suppress = true;
   try {
+    // /geothermal → sub-sistem geothermal
+    if (parts[0] === 'geothermal') {
+      system.set('geothermal');
+      return;
+    }
+    // path lain → sub-sistem STESY
+    system.set('stesy');
+
     // /wall → mode videowall
     if (parts[0] === 'wall') {
       mode.set('wall');
@@ -124,6 +133,7 @@ export function startRouter(): () => void {
     activeModule.subscribe(writeUrl),
     mode.subscribe(writeUrl),
     selected.subscribe(writeUrl),
+    system.subscribe(writeUrl),
   ];
   // mulai sekarang navigasi nyata memakai pushState (mendukung back/forward)
   initialSync = false;

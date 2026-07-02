@@ -26,6 +26,7 @@ const START = Date.now();
 // ---------- UI state ----------
 export const clock = writable<number>(START);
 export const mode = writable<'dashboard' | 'wall'>('dashboard');
+export const system = writable<'stesy' | 'geothermal'>('stesy');
 export const activeModule = writable<ModuleKey>('ringkasan');
 export const selected = writable<AssetRef | null>(null);
 export const paused = writable<boolean>(false);
