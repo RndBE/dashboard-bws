@@ -1,6 +1,8 @@
 <script lang="ts">
   import GaugeCard from './GaugeCard.svelte';
   import ScadaDiagram from './ScadaDiagram.svelte';
+  import SystemStatusPanel from './SystemStatusPanel.svelte';
+  import TrendPanel from './TrendPanel.svelte';
   import { geoTelemetry } from '../../geothermal/store';
   const t = geoTelemetry;
 </script>
@@ -14,5 +16,9 @@
 
 <div class="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-[3fr_1fr]">
   <ScadaDiagram />
-  <!-- SystemStatusPanel goes here in Task 8 -->
+  <SystemStatusPanel />
+</div>
+
+<div class="mt-3">
+  <TrendPanel />
 </div>
