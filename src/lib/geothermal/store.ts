@@ -1,4 +1,4 @@
-import { derived, get, writable } from 'svelte/store';
+import { derived, get, readable, writable } from 'svelte/store';
 import type { SeriesPoint } from '../types';
 import { paused } from '../stores';
 import { activeAlarmCount, stepTelemetry, worstStatus } from './wellpad.js';
@@ -27,15 +27,13 @@ export const geoHistory = writable<Record<HistoryKey, SeriesPoint[]>>(seedHistor
 
 export const geoActiveAlarmCount = derived(geoAlarms, ($a) => activeAlarmCount($a));
 
-/** Overall status = worst of the system rows (seeded normal; alarms drive severity). */
-export const geoOverallStatus = derived<[typeof geoActiveAlarmCount], GeoStatus>(
-  [geoActiveAlarmCount],
-  ([$active]) => {
-    const base = worstStatus(SYSTEM_ROWS.map((r) => r.state)) as GeoStatus;
-    if ($active >= 2) return worstStatus([base, 'siaga']) as GeoStatus;
-    if ($active === 1) return worstStatus([base, 'waspada']) as GeoStatus;
-    return base;
-  },
+/**
+ * System health = worst of the system-status rows. Active alarms are a
+ * separate indicator (bell badge + alarm panel), so they do not escalate this
+ * badge — matching the reference mockup's "System Normal" alongside "2 Active".
+ */
+export const geoOverallStatus = readable<GeoStatus>(
+  worstStatus(SYSTEM_ROWS.map((r) => r.state)) as GeoStatus,
 );
 
 export function startGeoSimulation(): () => void {
