@@ -22,15 +22,15 @@
       <svg viewBox="0 0 560 300" class="w-full rounded-lg bg-panel-2">
         <!-- water/steam pipes: dashed animated stroke -->
         <style>
-          .flow { stroke-dasharray: 7 6; animation: dash 1.1s linear infinite; }
-          @keyframes dash { to { stroke-dashoffset: -13; } }
+          .scada-flow { stroke-dasharray: 7 6; animation: scada-dash 1.1s linear infinite; }
+          @keyframes scada-dash { to { stroke-dashoffset: -13; } }
         </style>
         <!-- wellhead → separator -->
-        <path class="flow" d="M60 210 H200" stroke="#4f9bee" stroke-width="4" fill="none" />
+        <path class="scada-flow" d="M60 210 H200" stroke="#4f9bee" stroke-width="4" fill="none" />
         <!-- separator → heat pipe (steam) -->
-        <path class="flow" d="M300 150 H520" stroke="#d8635f" stroke-width="4" fill="none" />
+        <path class="scada-flow" d="M300 150 H520" stroke="#d8635f" stroke-width="4" fill="none" />
         <!-- separator → v-notch (water) -->
-        <path class="flow" d="M300 220 H430 V270" stroke="#4f9bee" stroke-width="4" fill="none" />
+        <path class="scada-flow" d="M300 220 H430 V270" stroke="#4f9bee" stroke-width="4" fill="none" />
 
         <!-- wellhead -->
         <rect x="30" y="150" width="30" height="90" rx="3" fill="#243244" stroke="#3a516f" />
