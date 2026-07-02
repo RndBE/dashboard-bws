@@ -3,6 +3,8 @@
   import ScadaDiagram from './ScadaDiagram.svelte';
   import SystemStatusPanel from './SystemStatusPanel.svelte';
   import TrendPanel from './TrendPanel.svelte';
+  import PowerPanel from './PowerPanel.svelte';
+  import CommsPanel from './CommsPanel.svelte';
   import { geoTelemetry } from '../../geothermal/store';
   const t = geoTelemetry;
 </script>
@@ -21,4 +23,9 @@
 
 <div class="mt-3">
   <TrendPanel />
+</div>
+
+<div class="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
+  <PowerPanel />
+  <CommsPanel />
 </div>
