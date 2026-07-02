@@ -43,6 +43,7 @@ export const SYSTEM_ROWS = [
   { key: 'cctv', label: 'CCTV System', state: 'normal', value: 'Normal' },
 ];
 
+/** @type {import('../data/cameras').Camera[]} */
 export const GEO_CAMERAS = [
   { id: 'cam-geo-wellpad', name: 'CAM 1 — Well Pad Overview', area: 'WELL PAD-01', group: 'geothermal', online: true },
   { id: 'cam-geo-separator', name: 'CAM 2 — Separator Area', area: 'WELL PAD-01', group: 'geothermal', online: true },
