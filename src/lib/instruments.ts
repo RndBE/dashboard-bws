@@ -29,12 +29,18 @@ const ICONS: Record<string, Component<any>> = {
   AWLR: Waves,
   TMA: Waves,
   AFMR: Gauge,
+  'Kecepatan Aliran': Activity,
   AWGC: SlidersHorizontal,
   AVWR: Gauge,
   AWQR: FlaskConical,
   ADR: MoveDiagonal,
   APLR: Activity,
   EWS: Activity,
+  // pos mata air (ASDR)
+  ASDR: Droplets,
+  'Debit Mata Air': Droplets,
+  'Tinggi Bukaan': Ruler,
+  Konduktivitas: Zap,
   // pos hujan
   ARR: CloudRainWind,
   'Curah Hujan': CloudRainWind,

@@ -4,6 +4,7 @@ import type {
   AssetKind,
   AssetRef,
   DashboardData,
+  HydroSection,
   Instrument,
   MapMarker,
   ModuleKey,
@@ -25,11 +26,27 @@ const START = Date.now();
 
 // ---------- UI state ----------
 export const clock = writable<number>(START);
-export const mode = writable<'dashboard' | 'wall'>('dashboard');
+/** dashboard = tampilan interaktif · wall = layar dinding · hydro = Portal Hidrologi */
+export const mode = writable<'dashboard' | 'wall' | 'hydro'>('dashboard');
 export const system = writable<'stesy' | 'geothermal'>('stesy');
 export const activeModule = writable<ModuleKey>('ringkasan');
+/** menu aktif di dalam Portal Hidrologi */
+export const hydroSection = writable<HydroSection>('beranda');
 export const selected = writable<AssetRef | null>(null);
 export const paused = writable<boolean>(false);
+
+// ---------- Navigasi Portal Hidrologi ----------
+/** buka Portal Hidrologi pada menu tertentu (default beranda) */
+export function openHydro(section: HydroSection = 'beranda') {
+  selected.set(null);
+  hydroSection.set(section);
+  mode.set('hydro');
+}
+/** kembali ke dashboard utama */
+export function exitHydro() {
+  selected.set(null);
+  mode.set('dashboard');
+}
 
 // ---------- Data ----------
 export const data = writable<DashboardData>(buildData(START));
@@ -59,6 +76,18 @@ export const statusCounts = derived(markers, ($m) => {
   return c;
 });
 
+// ---------- Derived khusus Portal Hidrologi ----------
+/** Pos Duga Air (TMA + debit sungai real-time) */
+export const pdaList = derived(data, ($d) => $d.pos.filter((p) => p.tipe === 'duga-air'));
+/** Pos Curah Hujan (PCH/ARR) */
+export const pchList = derived(data, ($d) => $d.pos.filter((p) => p.tipe === 'hujan'));
+/** Pos Kualitas Air (AWQR) */
+export const kualitasList = derived(data, ($d) => $d.pos.filter((p) => p.tipe === 'kualitas'));
+/** Pos Mata Air (ASDR) */
+export const mataAirList = derived(data, ($d) => $d.pos.filter((p) => p.tipe === 'mata-air'));
+/** Alert aktif terkait jaringan hidrologi (semua pos) */
+export const hydroAlerts = derived(activeAlerts, ($a) => $a.filter((x) => x.kind === 'pos'));
+
 // ---------- Marker assembly ----------
 /** jenis instrumen telemetri unik pada sebuah aset (urutan kemunculan; indikator kesehatan dikecualikan) */
 function instrTypes(insts: Instrument[]): string[] {
@@ -71,6 +100,7 @@ const POS_LOGGER: Record<PosTipe, string> = {
   hujan: 'ARR',
   klimatologi: 'AWS',
   kualitas: 'AWQR',
+  'mata-air': 'ASDR',
 };
 
 function buildMarkers($d: DashboardData): MapMarker[] {
@@ -272,7 +302,9 @@ function step(prev: DashboardData, now: number): DashboardData {
           ? nudge(cur + (storm ? 8 : 0), 2.5, 0, 120, 2)
           : p.tipe === 'klimatologi'
             ? nudge(cur, 0.4, 18, 36)
-            : nudge(cur, 0.05, 5.5, 9); // kualitas: pH
+            : p.tipe === 'mata-air'
+              ? nudge(cur, 0.25, 0.5, 60) // debit mata air (l/dt) — bergerak lambat
+              : nudge(cur, 0.05, 5.5, 9); // kualitas: pH
     const instruments = tickInstruments(p.instruments, nextPrimary, now);
     const prim = instruments.find((i) => i.primary) ?? instruments[0];
     const np = {

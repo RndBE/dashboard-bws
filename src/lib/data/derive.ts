@@ -31,6 +31,21 @@ export function kualitasStatus(insts: Instrument[]): Siaga {
   return SIAGA_ORDER[level];
 }
 
+/**
+ * Status mata air berdasarkan debit (l/dt). Berbeda dari pos lain: debit
+ * RENDAH yang berbahaya (kekeringan/penurunan kapasitas akuifer), sehingga
+ * ambang dibaca menurun — makin kecil debit makin gawat.
+ */
+export function mataAirStatus(
+  debit: number,
+  t: { waspada: number; siaga: number; awas: number },
+): Siaga {
+  if (debit <= t.awas) return 'awas';
+  if (debit <= t.siaga) return 'siaga';
+  if (debit <= t.waspada) return 'waspada';
+  return 'normal';
+}
+
 export function posStatus(
   p: Pick<PosHidrologi, 'tipe' | 'param' | 'thresholds' | 'instruments'>,
 ): Siaga {
@@ -40,6 +55,8 @@ export function posStatus(
       return p.thresholds ? siagaFromRising(p.param.value, p.thresholds) : 'normal';
     case 'kualitas':
       return kualitasStatus(p.instruments);
+    case 'mata-air':
+      return p.thresholds ? mataAirStatus(p.param.value, p.thresholds) : 'normal';
     case 'klimatologi':
     default:
       return 'normal';

@@ -12,6 +12,18 @@ export type ModuleKey =
 
 export type AssetKind = 'pos' | 'bendungan' | 'irigasi' | 'sumur' | 'op';
 
+/** Halaman/menu di dalam Portal Hidrologi (sub-aplikasi terpisah) */
+export type HydroSection =
+  | 'beranda'
+  | 'pda'
+  | 'debit'
+  | 'pch'
+  | 'kualitas'
+  | 'mata-air'
+  | 'cctv'
+  | 'peta'
+  | 'analisa';
+
 export interface SeriesPoint {
   /** epoch ms */
   t: number;
@@ -44,7 +56,12 @@ export interface Instrument {
 }
 
 /** Jenis pos berdasarkan logger/fungsi (satu pos satu logger) */
-export type PosTipe = 'duga-air' | 'hujan' | 'klimatologi' | 'kualitas';
+export type PosTipe =
+  | 'duga-air'
+  | 'hujan'
+  | 'klimatologi'
+  | 'kualitas'
+  | 'mata-air';
 
 /** Parameter utama sebuah pos (untuk penanda peta & grafik tren) */
 export interface PosParam {

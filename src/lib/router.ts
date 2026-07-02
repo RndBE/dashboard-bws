@@ -9,8 +9,8 @@
 // perubahan store → URL dan tombol back/forward (popstate) → store.
 
 import { get } from 'svelte/store';
-import { activeModule, mode, selected, system } from './stores';
-import type { AssetKind, ModuleKey } from './types';
+import { activeModule, hydroSection, mode, selected, system } from './stores';
+import type { AssetKind, HydroSection, ModuleKey } from './types';
 
 const MODULES: ModuleKey[] = [
   'ringkasan',
@@ -21,6 +21,17 @@ const MODULES: ModuleKey[] = [
   'analisa',
 ];
 const KINDS: AssetKind[] = ['pos', 'bendungan', 'irigasi', 'sumur', 'op'];
+const HYDRO_SECTIONS: HydroSection[] = [
+  'beranda',
+  'pda',
+  'debit',
+  'pch',
+  'kualitas',
+  'mata-air',
+  'cctv',
+  'peta',
+  'analisa',
+];
 
 const DEFAULT_MODULE: ModuleKey = 'ringkasan';
 
@@ -32,6 +43,8 @@ const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 function pathFromState(): string {
   if (get(system) === 'geothermal') return '/geothermal';
   if (get(mode) === 'wall') return '/wall';
+  // Portal Hidrologi: sub-aplikasi dengan URL sendiri (mis. /hidro/pda)
+  if (get(mode) === 'hydro') return `/hidro/${get(hydroSection)}`;
   const sel = get(selected);
   if (sel) return `/${sel.kind}/${sel.id}`;
   return `/${get(activeModule)}`;
@@ -86,7 +99,16 @@ function applyUrl() {
       return;
     }
 
-    // selain wall → mode dashboard
+    // /hidro/<section> → Portal Hidrologi
+    if (parts[0] === 'hidro') {
+      const sec = parts[1] as HydroSection;
+      hydroSection.set(HYDRO_SECTIONS.includes(sec) ? sec : 'beranda');
+      selected.set(null);
+      mode.set('hydro');
+      return;
+    }
+
+    // selain wall/hidro → mode dashboard
     mode.set('dashboard');
 
     // /<kind>/<id> → detail aset (kind harus valid & ada id)
@@ -132,6 +154,7 @@ export function startRouter(): () => void {
   const unsubs = [
     activeModule.subscribe(writeUrl),
     mode.subscribe(writeUrl),
+    hydroSection.subscribe(writeUrl),
     selected.subscribe(writeUrl),
     system.subscribe(writeUrl),
   ];
