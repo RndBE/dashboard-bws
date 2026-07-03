@@ -22,16 +22,16 @@
       class="rounded-xl border border-line bg-panel p-3 text-left transition-colors hover:bg-[var(--surface-hover)]"
     >
       <div class="flex items-center justify-between">
-        <span class="text-[12px] font-semibold text-ink-strong">{w.id}</span>
-        <span class="flex items-center gap-1.5 text-[10px] text-ink-muted">
+        <span class="text-[18px] font-semibold text-ink-strong">{w.id}</span>
+        <span class="flex items-center gap-1.5 text-[11px] text-ink-muted">
           <span class="h-2 w-2 rounded-full {DOT[w.status]}"></span>{w.status}
         </span>
       </div>
-      <div class="mt-0.5 text-[10px] text-ink-dim">{w.name} · {w.type}</div>
-      <dl class="mt-2 grid grid-cols-3 gap-1 text-[10px] text-ink-muted">
-        <div><dt class="text-ink-dim">WHP</dt><dd class="text-ink tnum">{num(w.telemetry.wellPressure, 1)}</dd></div>
-        <div><dt class="text-ink-dim">Flow</dt><dd class="text-ink tnum">{num(w.telemetry.flowM3h, 1)}</dd></div>
-        <div><dt class="text-ink-dim">MW</dt><dd class="text-ink tnum">{num(w.output.mw, 1)}</dd></div>
+      <div class="mt-0.5 text-[11px] text-ink-dim">{w.name} · {w.type}</div>
+      <dl class="mt-3 grid grid-cols-3 gap-1 text-[11px] text-ink-muted">
+        <div><dt class="text-ink-dim">WHP</dt><dd class="mt-0.5 text-[19px] text-ink tnum">{num(w.telemetry.wellPressure, 1)}</dd></div>
+        <div><dt class="text-ink-dim">Flow</dt><dd class="mt-0.5 text-[19px] text-ink tnum">{num(w.telemetry.flowM3h, 1)}</dd></div>
+        <div><dt class="text-ink-dim">MW</dt><dd class="mt-0.5 text-[19px] text-ink tnum">{num(w.output.mw, 1)}</dd></div>
       </dl>
     </button>
   {/each}
