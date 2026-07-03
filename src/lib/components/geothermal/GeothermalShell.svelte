@@ -4,7 +4,7 @@
   import GeoFooter from './GeoFooter.svelte';
   import GeoDashboard from './GeoDashboard.svelte';
   import GeoScadaPage from './pages/GeoScadaPage.svelte';
-  import GeoTrendPage from './pages/GeoTrendPage.svelte';
+  import GeoTrendsPage from './pages/GeoTrendsPage.svelte';
   import GeoDataPage from './pages/GeoDataPage.svelte';
   import GeoAlarmPage from './pages/GeoAlarmPage.svelte';
   import GeoCctvPage from './pages/GeoCctvPage.svelte';
@@ -18,7 +18,7 @@
   const PAGES: Record<GeoSection, any> = {
     dashboard: GeoDashboard,
     scada: GeoScadaPage,
-    trend: GeoTrendPage,
+    trend: GeoTrendsPage,
     data: GeoDataPage,
     alarm: GeoAlarmPage,
     cctv: GeoCctvPage,
