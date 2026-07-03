@@ -2,6 +2,6 @@
   import GeoCctvPanel from '../GeoCctvPanel.svelte';
 </script>
 
-<div class="mx-auto h-[calc(100vh-190px)] max-w-4xl">
-  <GeoCctvPanel />
+<div class="h-full min-h-[640px] w-full">
+  <GeoCctvPanel expanded />
 </div>

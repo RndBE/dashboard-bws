@@ -4,6 +4,8 @@
 
 **Goal:** Build the Analytics group: per-well history buffers, a multi-pen Trends page, a Historian query page with CSV export, and a Production page (output by well, gross MW, capacity factor, decline curve).
 
+**Status 2026-07-03:** Tasks 1-4 are present in the codebase; Task 5 has been implemented in this pass. Local verification: `npm run check` passed with 0 errors/0 warnings, `npm test` passed 43/43 tests, and `npm run build` completed successfully. Commit steps are intentionally still unchecked.
+
 **Architecture:** Pure history math in `src/lib/geothermal/history.js` (plain JS, injected time, `node --test`). The store keeps a per-well × per-tag ring buffer (`geoHistoryByWell`) updated every tick; the existing `geoHistory` (selected-well view) becomes a derived projection so `TrendPanel` keeps working. New pages reuse the existing `MultiChart` (multi-line + `barMode:'stacked'`) and `GeoGauge` primitives.
 
 **Tech Stack:** Svelte 5 runes, TypeScript, Vite, Tailwind, Lucide, `node --test`.
@@ -294,9 +296,9 @@ git commit -m "feat(geothermal): Historian query page with CSV export"
 - **Per-well contribution:** small table (well · type · steam t/h · MW · % of field MW).
 - Route `production`; remove from STUB.
 
-- [ ] **Step 1: Build `GeoProductionPage.svelte`.**
-- [ ] **Step 2: Route it.**
-- [ ] **Step 3: Verify** — `npm run check` 0 errors; `npm run dev`: Production page shows KPI row, per-well output bars, decline curve, contribution table; capacity factor computes.
+- [x] **Step 1: Build `GeoProductionPage.svelte`.**
+- [x] **Step 2: Route it.**
+- [x] **Step 3: Verify** — `npm run check` 0 errors; `npm run dev`: Production page shows KPI row, per-well output bars, decline curve, contribution table; capacity factor computes.
 - [ ] **Step 4: Commit**
 
 ```bash

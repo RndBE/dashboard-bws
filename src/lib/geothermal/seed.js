@@ -45,10 +45,10 @@ export const SYSTEM_ROWS = [
 
 /** @type {import('../data/cameras').Camera[]} */
 export const GEO_CAMERAS = [
-  { id: 'cam-geo-wellpad', name: 'CAM 1 — Well Pad Overview', area: 'WELL PAD-01', group: 'geothermal', online: true },
-  { id: 'cam-geo-separator', name: 'CAM 2 — Separator Area', area: 'WELL PAD-01', group: 'geothermal', online: true },
-  { id: 'cam-geo-vnotch', name: 'CAM 3 — V-Notch Channel', area: 'WELL PAD-01', group: 'geothermal', online: true },
-  { id: 'cam-geo-solar', name: 'CAM 4 — Solar Panel Area', area: 'WELL PAD-01', group: 'geothermal', online: true },
+  { id: 'cam-geo-wellpad', name: 'CAM 1 — Well Pad Overview', area: 'WELL PAD-01', group: 'geothermal', online: true, ip: '103.94.124.71', vendor: 'Hikvision DS-2DE7' },
+  { id: 'cam-geo-separator', name: 'CAM 2 — Separator Area', area: 'Separator Bay', group: 'geothermal', online: true, ip: '103.94.124.72', vendor: 'Dahua SD6AL' },
+  { id: 'cam-geo-vnotch', name: 'CAM 3 — V-Notch Channel', area: 'V-Notch Channel', group: 'geothermal', online: true, ip: '103.94.124.73', vendor: 'Hikvision DS-2CD2' },
+  { id: 'cam-geo-solar', name: 'CAM 4 — Solar Panel Area', area: 'Power Skid', group: 'geothermal', online: true, ip: '103.94.124.74', vendor: 'Dahua IPC-HFW5' },
 ];
 
 export const SEED_EVENTS = [

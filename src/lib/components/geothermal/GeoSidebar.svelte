@@ -12,9 +12,8 @@
 </script>
 
 <aside class="flex w-56 shrink-0 flex-col overflow-hidden min-h-0 border-r border-line bg-surface">
-  <div class="flex items-center gap-2 border-b border-line px-4 py-3">
-    <Logo height={24} />
-    <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-pu-bright">Geothermal</div>
+  <div class="flex items-center justify-center border-b border-line px-5 py-3.5">
+    <Logo height={34} />
   </div>
 
   <nav class="flex flex-col gap-2 overflow-y-auto p-2">

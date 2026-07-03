@@ -12,7 +12,13 @@
   import GeoWellsPage from './pages/GeoWellsPage.svelte';
   import GeoFieldMapPage from './pages/GeoFieldMapPage.svelte';
   import GeoHistorianPage from './pages/GeoHistorianPage.svelte';
-  import GeoPlaceholder from './pages/GeoPlaceholder.svelte';
+  import GeoProductionPage from './pages/GeoProductionPage.svelte';
+  import GeoInstrumentsPage from './pages/GeoInstrumentsPage.svelte';
+  import GeoMaintenancePage from './pages/GeoMaintenancePage.svelte';
+  import GeoGeochemPage from './pages/GeoGeochemPage.svelte';
+  import GeoReportingPage from './pages/GeoReportingPage.svelte';
+  import GeoConfigPage from './pages/GeoConfigPage.svelte';
+  import GeoHealthPage from './pages/GeoHealthPage.svelte';
   import { geoSection } from '../../geothermal/store';
   import { GEO_NAV, type GeoSection } from '../../config/geoNav';
 
@@ -23,40 +29,29 @@
     data: GeoDataPage,
     alarm: GeoAlarmPage,
     cctv: GeoCctvPage,
-    status: GeoStatusPage,
-    health: GeoStatusPage,       // System Health reuses the status page for now
+    status: GeoStatusPage,       // legacy key — retained for back-compat
+    health: GeoHealthPage,
     fieldmap: GeoFieldMapPage,
     wells: GeoWellsPage,
     historian: GeoHistorianPage,
-    // Phase 2+ pages — placeholder until built:
-    production: GeoPlaceholder,
-    instruments: GeoPlaceholder,
-    maintenance: GeoPlaceholder,
-    geochem: GeoPlaceholder,
-    reporting: GeoPlaceholder,
-    config: GeoPlaceholder,
-  };
-
-  const STUB: Partial<Record<GeoSection, { title: string; note: string }>> = {
-    production: { title: 'Production', note: 'Output uap, brine, gross MW, dan capacity factor. Dibangun pada Fase 3.' },
-    instruments: { title: 'Instruments', note: 'Registry tag instrumen dan status kalibrasi. Dibangun pada Fase 4.' },
-    maintenance: { title: 'Maintenance', note: 'Work order dan kesehatan peralatan. Dibangun pada Fase 4.' },
-    geochem: { title: 'Geochemistry', note: 'Kimia brine, indeks scaling, NCG, dan pH. Dibangun pada Fase 4.' },
-    reporting: { title: 'Reporting', note: 'Laporan periodik dan kepatuhan lingkungan/ESDM. Dibangun pada Fase 5.' },
-    config: { title: 'Configuration', note: 'Pengaturan tag, ambang alarm, dan pengguna. Dibangun pada Fase 5.' },
+    production: GeoProductionPage,
+    instruments: GeoInstrumentsPage,
+    maintenance: GeoMaintenancePage,
+    geochem: GeoGeochemPage,
+    reporting: GeoReportingPage,
+    config: GeoConfigPage,
   };
 
   const Current = $derived(PAGES[$geoSection]);
   const active = $derived(GEO_NAV.find((n) => n.key === $geoSection) ?? GEO_NAV[0]);
-  const stub = $derived(STUB[$geoSection]);
 </script>
 
 <div class="flex h-screen overflow-hidden">
   <GeoSidebar />
   <div class="flex min-w-0 flex-1 flex-col">
     <GeoHeader />
-    <main class="min-h-0 flex-1 overflow-y-auto p-3">
-      {#if $geoSection !== 'dashboard'}
+    <main class="min-h-0 flex-1 overflow-y-auto {$geoSection === 'cctv' ? 'p-0' : 'p-3'}">
+      {#if $geoSection !== 'dashboard' && $geoSection !== 'cctv'}
         <div class="mb-3 flex items-center gap-2.5">
           <span class="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-line bg-panel text-accent-bright">
             <active.icon size={16} />
@@ -72,11 +67,7 @@
 
       {#key $geoSection}
         <div class="fade-up">
-          {#if stub}
-            <GeoPlaceholder icon={active.icon} title={stub.title} note={stub.note} />
-          {:else}
-            <Current />
-          {/if}
+          <Current />
         </div>
       {/key}
     </main>
