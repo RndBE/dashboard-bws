@@ -7,11 +7,17 @@
   import CommsPanel from './CommsPanel.svelte';
   import AlarmSummaryPanel from './AlarmSummaryPanel.svelte';
   import GeoCctvPanel from './GeoCctvPanel.svelte';
+  import FieldKpiRow from './FieldKpiRow.svelte';
+  import WellStatusGrid from './WellStatusGrid.svelte';
   import { geoTelemetry } from '../../geothermal/store';
   const t = geoTelemetry;
 </script>
 
 <div class="space-y-3">
+  <FieldKpiRow />
+  <div class="text-[11px] font-semibold uppercase tracking-wider text-ink-dim">Wells</div>
+  <WellStatusGrid />
+
   <!-- upper region: gauges + system status + scada (left) | cctv column (right) -->
   <div class="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_290px]">
     <div class="min-w-0 space-y-3">
