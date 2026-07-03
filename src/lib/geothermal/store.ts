@@ -1,7 +1,7 @@
 import { derived, get, readable, writable } from 'svelte/store';
 import type { SeriesPoint } from '../types';
 import { paused } from '../stores';
-import { activeAlarmCount, stepTelemetry, worstStatus } from './wellpad.js';
+import { activeAlarmCount, worstStatus } from './wellpad.js';
 import { makeWells, stepField, fieldKpis } from './field.js';
 import { SEED_ALARMS, SEED_TELEMETRY, SYSTEM_ROWS } from './seed.js';
 import type { AlarmRow, FieldKpis, GeoStatus, Telemetry, Well } from './types';
@@ -64,6 +64,9 @@ export function startGeoSimulation(): () => void {
     const wells = stepField(get(geoWells));
     geoWells.set(wells as Well[]);
     const sel = wells.find((w) => w.id === get(geoSelectedWellId)) ?? wells[0];
+    // NOTE: history tracks only the currently-selected well. Switching wells
+    // mid-run splices the new well's values onto the previous well's buffer
+    // (cosmetic discontinuity in TrendPanel). Per-well history buffers land in Phase 3.
     geoHistory.update((h) => {
       const out = { ...h };
       for (const k of HISTORY_KEYS) {

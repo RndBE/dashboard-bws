@@ -18,13 +18,13 @@
   </div>
 
   <nav class="flex flex-col gap-2 overflow-y-auto p-2">
-    {#each GEO_NAV_GROUPS as group}
+    {#each GEO_NAV_GROUPS as group (group.label)}
       <div>
         <div class="px-3 pb-1 pt-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-ink-dim">
           {group.label}
         </div>
         <div class="flex flex-col gap-0.5">
-          {#each group.items as item}
+          {#each group.items as item (item.key)}
             {@const on = $geoSection === item.key}
             <button
               onclick={() => go(item.key)}
