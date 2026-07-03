@@ -32,7 +32,7 @@ export interface AlarmRow {
   label: string;
   severity: GeoStatus;
   value: number;
-  status: 'active' | 'cleared';
+  status: 'active' | 'shelved' | 'cleared';
   ack: boolean;
 }
 

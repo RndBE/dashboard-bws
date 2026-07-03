@@ -18,6 +18,8 @@ export function fmtClock(ms) {
   return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
+const MAX_CLEARED = 40;
+
 /** Evaluate alarms against the current wells, mutating a working copy of prev.
  * @param {Array<{id: string, telemetry: Record<string, number>}>} wells
  * @param {import('./types').AlarmRow[]} prev
@@ -26,12 +28,16 @@ export function fmtClock(ms) {
  * @returns {{alarms: import('./types').AlarmRow[], nextId: number}} */
 export function evaluateAlarms(wells, prev, now, nextId) {
   const alarms = prev.map((a) => ({ ...a }));
-  const activeIdx = (/** @type {string} */ wellId, /** @type {string} */ tag) =>
-    alarms.findIndex((a) => a.well === wellId && a.tag === tag && a.status === 'active');
+  // "Open" = still tracked as breaching (active) or acknowledged-away by the
+  // operator but not yet resolved (shelved). Either way there must be at
+  // most one open alarm per (well,tag); a shelved alarm keeps its status
+  // while the tag keeps breaching, and only clears once the tag is normal.
+  const openIdx = (/** @type {string} */ wellId, /** @type {string} */ tag) =>
+    alarms.findIndex((a) => a.well === wellId && a.tag === tag && (a.status === 'active' || a.status === 'shelved'));
   for (const w of wells) {
     for (const m of MONITORED) {
       const state = sensorState(w.telemetry[m.tag], WELL_THRESHOLDS[m.tag]);
-      const i = activeIdx(w.id, m.tag);
+      const i = openIdx(w.id, m.tag);
       if (state !== 'normal') {
         if (i === -1) {
           alarms.push({
@@ -49,7 +55,26 @@ export function evaluateAlarms(wells, prev, now, nextId) {
       }
     }
   }
-  return { alarms, nextId };
+  return { alarms: pruneCleared(alarms), nextId };
+}
+
+/** Keep all open (active/shelved) alarms plus only the most-recent
+ * MAX_CLEARED cleared alarms, preserving original order.
+ * @param {import('./types').AlarmRow[]} alarms
+ * @returns {import('./types').AlarmRow[]} */
+function pruneCleared(alarms) {
+  const clearedCount = alarms.reduce((n, a) => n + (a.status === 'cleared' ? 1 : 0), 0);
+  if (clearedCount <= MAX_CLEARED) return alarms;
+  let drop = clearedCount - MAX_CLEARED;
+  const out = [];
+  for (const a of alarms) {
+    if (a.status === 'cleared' && drop > 0) {
+      drop--;
+      continue;
+    }
+    out.push(a);
+  }
+  return out;
 }
 
 /** @param {import('./types').AlarmRow[]} alarms */

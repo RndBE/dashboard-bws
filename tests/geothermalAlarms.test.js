@@ -55,3 +55,52 @@ test('alarmStats counts active alarms by severity', () => {
   assert.equal(s.bySeverity.awas, 1);
   assert.equal(s.bySeverity.waspada, 1);
 });
+
+test('F1: a shelved alarm whose tag is still breaching is updated in place, not re-raised', () => {
+  const hot = wellWith('WP-01', { wellPressure: WELL_THRESHOLDS.wellPressure.waspada + 0.5 });
+  const r1 = evaluateAlarms([hot], [], 1000, 1);
+  // Operator shelves the alarm (simulating store.shelveAlarm).
+  r1.alarms[0].status = 'shelved';
+  const stillHot = wellWith('WP-01', { wellPressure: WELL_THRESHOLDS.wellPressure.siaga + 0.5 });
+  const r2 = evaluateAlarms([stillHot], r1.alarms, 2000, r1.nextId);
+  const matches = r2.alarms.filter((x) => x.well === 'WP-01' && x.tag === 'wellPressure');
+  assert.equal(matches.length, 1, 'exactly one alarm for this (well,tag)');
+  assert.equal(matches[0].status, 'shelved', 'stays shelved while breaching');
+  assert.equal(matches[0].id, r1.alarms[0].id, 'same alarm, no new one pushed');
+  assert.equal(matches[0].severity, 'siaga', 'severity updated in place');
+  assert.equal(r2.nextId, r1.nextId, 'no new id consumed');
+});
+
+test('F1: a shelved alarm whose tag returns to normal becomes cleared', () => {
+  const hot = wellWith('WP-01', { wellPressure: WELL_THRESHOLDS.wellPressure.waspada + 0.5 });
+  const r1 = evaluateAlarms([hot], [], 1000, 1);
+  r1.alarms[0].status = 'shelved';
+  const cool = wellWith('WP-01', {});
+  const r2 = evaluateAlarms([cool], r1.alarms, 2000, r1.nextId);
+  const a = r2.alarms.find((x) => x.id === r1.alarms[0].id);
+  assert.equal(a.status, 'cleared');
+});
+
+test('F2: evaluateAlarms prunes cleared alarms to the most-recent 40, keeping all open alarms', () => {
+  let alarms = [];
+  let nextId = 1;
+  // Drive many breach/clear cycles on distinct wells to accumulate >40 cleared alarms.
+  for (let i = 0; i < 50; i++) {
+    const id = `WP-${i}`;
+    const hot = wellWith(id, { wellPressure: WELL_THRESHOLDS.wellPressure.waspada + 0.5 });
+    const r1 = evaluateAlarms([hot], alarms, 1000 + i * 10, nextId);
+    const cool = wellWith(id, {});
+    const r2 = evaluateAlarms([cool], r1.alarms, 1000 + i * 10 + 5, r1.nextId);
+    alarms = r2.alarms;
+    nextId = r2.nextId;
+  }
+  // Keep one still-open alarm to verify open alarms are never pruned.
+  const openWell = wellWith('WP-OPEN', { wellPressure: WELL_THRESHOLDS.wellPressure.waspada + 0.5 });
+  const rOpen = evaluateAlarms([openWell], alarms, 5000, nextId);
+  alarms = rOpen.alarms;
+
+  const cleared = alarms.filter((a) => a.status === 'cleared');
+  const open = alarms.filter((a) => a.status === 'active' || a.status === 'shelved');
+  assert.ok(cleared.length <= 40, `expected <=40 cleared alarms, got ${cleared.length}`);
+  assert.equal(open.length, 1, 'the still-open alarm must be preserved');
+});

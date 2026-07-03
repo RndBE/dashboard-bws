@@ -26,6 +26,18 @@
     operator: 'text-normal bg-normal/15',
   };
 
+  const STATUS_LABEL: Record<AlarmRow['status'], string> = {
+    active: 'ACTIVE',
+    shelved: 'SHELVED',
+    cleared: 'CLEARED',
+  };
+
+  const STATUS_CLS: Record<AlarmRow['status'], string> = {
+    active: 'text-awas',
+    shelved: 'text-ink-muted',
+    cleared: 'text-normal',
+  };
+
   const activeAlarms = $derived($geoAlarms.filter((a) => a.status === 'active'));
 
   const wellOptions = $derived(
@@ -166,8 +178,8 @@
                   <td class="px-2 py-1.5 text-ink">{a.label}</td>
                   <td class="px-2 py-1.5"><SeverityChip severity={a.severity} /></td>
                   <td class="px-2 py-1.5 text-right font-semibold text-ink-strong tnum">{fmtValue(a)}</td>
-                  <td class="px-2 py-1.5 text-right font-semibold {a.status === 'active' ? 'text-awas' : 'text-normal'}">
-                    {a.status === 'active' ? 'ACTIVE' : 'CLEARED'}
+                  <td class="px-2 py-1.5 text-right font-semibold {STATUS_CLS[a.status]}">
+                    {STATUS_LABEL[a.status]}
                   </td>
                 </tr>
               {/each}

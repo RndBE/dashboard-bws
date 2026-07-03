@@ -126,12 +126,12 @@
           <circle cx={p.x} cy={p.y} r="11" fill="none" stroke="var(--color-{p.well.status})" stroke-width="1.5" opacity="0.65" />
         {/if}
         {#if p.well.type === 'production'}
-          <circle cx={p.x} cy={p.y} r="7" fill="var(--color-{p.well.status})" stroke="#0b1220" stroke-width="1.5" />
+          <circle cx={p.x} cy={p.y} r="7" fill="var(--color-{p.well.status})" stroke="var(--color-line)" stroke-width="1.5" />
         {:else}
           <polygon
             points={diamondPoints(p.x, p.y)}
             fill="var(--color-{p.well.status})"
-            stroke="#0b1220"
+            stroke="var(--color-line)"
             stroke-width="1.5"
             stroke-dasharray="2 1"
           />

@@ -72,7 +72,7 @@ export function ackAlarm(id: number): void {
 export function shelveAlarm(id: number): void {
   let label = '';
   geoAlarms.update((list) =>
-    list.map((a) => (a.id === id ? ((label = a.label), { ...a, status: 'cleared' as const }) : a)));
+    list.map((a) => (a.id === id ? ((label = a.label), { ...a, status: 'shelved' as const }) : a)));
   if (label) pushEvent('operator', `Operator shelved ${label}`);
 }
 
