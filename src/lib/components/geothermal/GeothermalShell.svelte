@@ -11,6 +11,7 @@
   import GeoStatusPage from './pages/GeoStatusPage.svelte';
   import GeoWellsPage from './pages/GeoWellsPage.svelte';
   import GeoFieldMapPage from './pages/GeoFieldMapPage.svelte';
+  import GeoHistorianPage from './pages/GeoHistorianPage.svelte';
   import GeoPlaceholder from './pages/GeoPlaceholder.svelte';
   import { geoSection } from '../../geothermal/store';
   import { GEO_NAV, type GeoSection } from '../../config/geoNav';
@@ -26,8 +27,8 @@
     health: GeoStatusPage,       // System Health reuses the status page for now
     fieldmap: GeoFieldMapPage,
     wells: GeoWellsPage,
+    historian: GeoHistorianPage,
     // Phase 2+ pages — placeholder until built:
-    historian: GeoPlaceholder,
     production: GeoPlaceholder,
     instruments: GeoPlaceholder,
     maintenance: GeoPlaceholder,
@@ -37,7 +38,6 @@
   };
 
   const STUB: Partial<Record<GeoSection, { title: string; note: string }>> = {
-    historian: { title: 'Historian', note: 'Query data historis tag telemetri. Dibangun pada Fase 3.' },
     production: { title: 'Production', note: 'Output uap, brine, gross MW, dan capacity factor. Dibangun pada Fase 3.' },
     instruments: { title: 'Instruments', note: 'Registry tag instrumen dan status kalibrasi. Dibangun pada Fase 4.' },
     maintenance: { title: 'Maintenance', note: 'Work order dan kesehatan peralatan. Dibangun pada Fase 4.' },
