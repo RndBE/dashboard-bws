@@ -51,9 +51,8 @@ export const GEO_CAMERAS = [
   { id: 'cam-geo-solar', name: 'CAM 4 — Solar Panel Area', area: 'WELL PAD-01', group: 'geothermal', online: true },
 ];
 
-export const SEED_ALARMS = [
-  { time: '10:22:15', label: 'High Heat Pipe Pressure', status: 'active' },
-  { time: '10:18:47', label: 'High Water Level', status: 'active' },
-  { time: '09:45:11', label: 'VSAT Signal Loss', status: 'cleared' },
-  { time: '09:12:03', label: 'Low Battery Voltage', status: 'cleared' },
+export const SEED_EVENTS = [
+  { id: 1, time: '09:12:03', kind: 'comms', message: 'VSAT link quality recovered to 98%' },
+  { id: 2, time: '09:45:11', kind: 'valve', message: 'XV-102 commanded OPEN (WP-02)' },
+  { id: 3, time: '10:02:44', kind: 'operator', message: 'Operator acknowledged WP-03 · Heat Pipe Pressure' },
 ];
