@@ -71,3 +71,30 @@ test('fieldKpis sums production output and reports availability', () => {
   assert.equal(k.wellsTotal, wells.length);
   assert.ok(k.availability >= 0 && k.availability <= 100);
 });
+
+test('WELL_THRESHOLDS stay within simulation RANGES (so escalation is reachable)', () => {
+  const map = { wellPressure: 'wellPressure', heatPipePressure: 'heatPipePressure', level: 'level' };
+  for (const key of Object.keys(map)) {
+    const t = WELL_THRESHOLDS[key];
+    assert.ok(t.awas <= RANGES[key].max, `${key}.awas ${t.awas} exceeds RANGES max ${RANGES[key].max}`);
+    assert.ok(t.waspada >= RANGES[key].min, `${key}.waspada below RANGES min`);
+    assert.ok(t.waspada < t.siaga && t.siaga < t.awas, `${key} thresholds not ascending`);
+  }
+});
+
+test('makeWells starts every well inside the declared RANGES envelope', () => {
+  for (const w of makeWells()) {
+    for (const key of Object.keys(RANGES)) {
+      assert.ok(w.telemetry[key] >= RANGES[key].min && w.telemetry[key] <= RANGES[key].max,
+        `${w.id}.${key}=${w.telemetry[key]} out of range`);
+    }
+  }
+});
+
+test('fieldKpis availability and wellsUp drop when a well is awas', () => {
+  const wells = makeWells();
+  wells[0] = { ...wells[0], status: 'awas' };
+  const k = fieldKpis(wells);
+  assert.equal(k.wellsUp, wells.length - 1);
+  assert.equal(k.availability, r2Ref((wells.length - 1) / wells.length * 100));
+});

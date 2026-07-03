@@ -1,7 +1,7 @@
 // src/lib/geothermal/field.js
 // Pure multi-well field math. Plain JS so `node --test` imports it directly.
 // Randomness injected (`rnd`) for deterministic tests.
-import { stepTelemetry, worstStatus, sensorState, r2 } from './wellpad.js';
+import { stepTelemetry, worstStatus, sensorState, r2, clamp, RANGES } from './wellpad.js';
 import { SEED_TELEMETRY } from './seed.js';
 
 /** Seed definitions for the field's wells. `factor` scales the seed telemetry
@@ -18,10 +18,16 @@ export const WELL_SEED = [
 
 /** Rising thresholds per tag; well status = worst across tags. */
 export const WELL_THRESHOLDS = {
-  wellPressure: { waspada: 132, siaga: 136, awas: 140 },
-  heatPipePressure: { waspada: 92, siaga: 96, awas: 100 },
-  level: { waspada: 0.52, siaga: 0.56, awas: 0.60 },
+  wellPressure: { waspada: 130, siaga: 133, awas: 134.5 },
+  heatPipePressure: { waspada: 91, siaga: 93, awas: 94.5 },
+  level: { waspada: 0.49, siaga: 0.52, awas: 0.54 },
 };
+
+/** Reinjection wells produce no steam or MW; brine still flows.
+ * @param {Record<string, number>} t @returns {{steamTh:number, brineM3h:number, mw:number}} */
+function reinjectionOutput(t) {
+  return { steamTh: 0, brineM3h: t.flowM3h, mw: 0 };
+}
 
 /** Steam (t/h) and gross MW derived from separator conditions. Mock but monotonic.
  * @param {Record<string, number>} t
@@ -31,7 +37,7 @@ export function wellOutput(t) {
   return { steamTh, brineM3h: t.flowM3h, mw: r2(steamTh * 0.13) };
 }
 
-/** @param {Record<string, number>} t @returns {string} */
+/** @param {Record<string, number>} t @returns {'normal'|'waspada'|'siaga'|'awas'} */
 export function wellStatus(t) {
   return worstStatus([
     sensorState(t.wellPressure, WELL_THRESHOLDS.wellPressure),
@@ -43,12 +49,10 @@ export function wellStatus(t) {
 /** @param {{id:string,name:string,type:string,lat:number,lng:number,factor:number}} seed */
 function buildWell(seed) {
   const telemetry = { ...SEED_TELEMETRY };
-  telemetry.wellPressure = r2(SEED_TELEMETRY.wellPressure * seed.factor);
-  telemetry.heatPipePressure = r2(SEED_TELEMETRY.heatPipePressure * seed.factor);
-  telemetry.temperature = r2(SEED_TELEMETRY.temperature * (0.5 + seed.factor / 2));
-  const output = seed.type === 'reinjection'
-    ? { steamTh: 0, brineM3h: telemetry.flowM3h, mw: 0 }
-    : wellOutput(telemetry);
+  telemetry.wellPressure = clamp(r2(SEED_TELEMETRY.wellPressure * seed.factor), RANGES.wellPressure.min, RANGES.wellPressure.max);
+  telemetry.heatPipePressure = clamp(r2(SEED_TELEMETRY.heatPipePressure * seed.factor), RANGES.heatPipePressure.min, RANGES.heatPipePressure.max);
+  telemetry.temperature = clamp(r2(SEED_TELEMETRY.temperature * (0.5 + seed.factor / 2)), RANGES.temperature.min, RANGES.temperature.max);
+  const output = seed.type === 'reinjection' ? reinjectionOutput(telemetry) : wellOutput(telemetry);
   return {
     id: seed.id, name: seed.name, type: seed.type, lat: seed.lat, lng: seed.lng,
     telemetry, output, status: wellStatus(telemetry),
@@ -63,9 +67,7 @@ export function makeWells() {
 /** @param {object} well @param {() => number} [rnd] */
 export function stepWell(well, rnd = Math.random) {
   const telemetry = stepTelemetry(well.telemetry, rnd);
-  const output = well.type === 'reinjection'
-    ? { steamTh: 0, brineM3h: telemetry.flowM3h, mw: 0 }
-    : wellOutput(telemetry);
+  const output = well.type === 'reinjection' ? reinjectionOutput(telemetry) : wellOutput(telemetry);
   return { ...well, telemetry, output, status: wellStatus(telemetry) };
 }
 
