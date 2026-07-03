@@ -5,6 +5,7 @@ import { activeAlarmCount, worstStatus } from './wellpad.js';
 import { makeWells, stepField, fieldKpis } from './field.js';
 import { evaluateAlarms, fmtClock } from './alarms.js';
 import { SEED_EVENTS, SEED_TELEMETRY, SYSTEM_ROWS } from './seed.js';
+import { seedWellHistory, appendHistory } from './history.js';
 import type { AlarmRow, FieldKpis, GeoEvent, GeoStatus, Telemetry, Well } from './types';
 import type { GeoSection } from '../config/geoNav';
 
@@ -12,8 +13,6 @@ import type { GeoSection } from '../config/geoNav';
 export const geoSection = writable<GeoSection>('dashboard');
 
 const TICK_MS = 5000;
-const HISTORY_KEYS = ['wellPressure', 'heatPipePressure', 'level', 'flowLs'] as const;
-type HistoryKey = (typeof HISTORY_KEYS)[number];
 
 /** All wells in the field. Sim steps this each tick. */
 export const geoWells = writable<Well[]>(makeWells() as Well[]);
@@ -38,18 +37,23 @@ export const geoEvents = writable<GeoEvent[]>(SEED_EVENTS.map((e) => ({ ...e }))
 let alarmSeq = 1;
 let eventSeq = 100;
 
-function seedHistory(): Record<HistoryKey, SeriesPoint[]> {
-  const now = Date.now();
-  const out = {} as Record<HistoryKey, SeriesPoint[]>;
-  for (const k of HISTORY_KEYS) {
-    out[k] = Array.from({ length: 48 }, (_, i) => ({
-      t: now - (47 - i) * TICK_MS,
-      v: SEED_TELEMETRY[k],
-    }));
-  }
-  return out;
-}
-export const geoHistory = writable<Record<HistoryKey, SeriesPoint[]>>(seedHistory());
+export const geoHistoryByWell = writable(
+  seedWellHistory(get(geoWells) as any, Date.now(), 48, TICK_MS),
+);
+
+/** Selected-well projection kept for TrendPanel/back-compat. */
+export const geoHistory = derived(
+  [geoHistoryByWell, geoSelectedWellId],
+  ([$h, $id]) => {
+    const w = $h[$id] || {};
+    return {
+      wellPressure: w.wellPressure || [],
+      heatPipePressure: w.heatPipePressure || [],
+      level: w.level || [],
+      flowLs: w.flowLs || [],
+    };
+  },
+);
 
 export const geoActiveAlarmCount = derived(geoAlarms, ($a) => activeAlarmCount($a));
 
@@ -95,17 +99,7 @@ export function startGeoSimulation(): () => void {
         pushEvent('alarm', `${a.severity.toUpperCase()} — ${a.label} = ${a.value}`);
       }
     }
-    const sel = wells.find((w) => w.id === get(geoSelectedWellId)) ?? wells[0];
-    // NOTE: history tracks only the currently-selected well. Switching wells
-    // mid-run splices the new well's values onto the previous well's buffer
-    // (cosmetic discontinuity in TrendPanel). Per-well history buffers land in Phase 3.
-    geoHistory.update((h) => {
-      const out = { ...h };
-      for (const k of HISTORY_KEYS) {
-        out[k] = [...h[k].slice(-47), { t: now, v: sel.telemetry[k] }];
-      }
-      return out;
-    });
+    geoHistoryByWell.update((h) => appendHistory(h, wells as any, now));
   }, TICK_MS);
   return () => clearInterval(id);
 }
