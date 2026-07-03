@@ -6,7 +6,7 @@ import { SEED_TELEMETRY } from './seed.js';
 
 /** Seed definitions for the field's wells. `factor` scales the seed telemetry
  *  so wells read differently. Reinjection wells produce no steam/MW.
- * @type {Array<{id:string,name:string,type:'production'|'reinjection',lat:number,lng:number,factor:number}>} */
+ * @type {Array<{id:string,name:string,type:import('./types').WellType,lat:number,lng:number,factor:number}>} */
 export const WELL_SEED = [
   { id: 'WP-01', name: 'Well Pad 01', type: 'production', lat: -7.250, lng: 109.100, factor: 1.00 },
   { id: 'WP-02', name: 'Well Pad 02', type: 'production', lat: -7.246, lng: 109.108, factor: 0.94 },
@@ -24,60 +24,65 @@ export const WELL_THRESHOLDS = {
 };
 
 /** Reinjection wells produce no steam or MW; brine still flows.
- * @param {Record<string, number>} t @returns {{steamTh:number, brineM3h:number, mw:number}} */
+ * @param {Record<string, number>} t
+ * @returns {import('./types').WellOutput} */
 function reinjectionOutput(t) {
   return { steamTh: 0, brineM3h: t.flowM3h, mw: 0 };
 }
 
 /** Steam (t/h) and gross MW derived from separator conditions. Mock but monotonic.
  * @param {Record<string, number>} t
- * @returns {{steamTh:number, brineM3h:number, mw:number}} */
+ * @returns {import('./types').WellOutput} */
 export function wellOutput(t) {
   const steamTh = r2((t.wellPressure - 100) * 0.9 + (t.temperature - 180) * 0.6);
   return { steamTh, brineM3h: t.flowM3h, mw: r2(steamTh * 0.13) };
 }
 
-/** @param {Record<string, number>} t @returns {'normal'|'waspada'|'siaga'|'awas'} */
+/** @param {Record<string, number>} t @returns {import('./types').GeoStatus} */
 export function wellStatus(t) {
-  return worstStatus([
+  return /** @type {import('./types').GeoStatus} */ (worstStatus([
     sensorState(t.wellPressure, WELL_THRESHOLDS.wellPressure),
     sensorState(t.heatPipePressure, WELL_THRESHOLDS.heatPipePressure),
     sensorState(t.level, WELL_THRESHOLDS.level),
-  ]);
+  ]));
 }
 
-/** @param {{id:string,name:string,type:string,lat:number,lng:number,factor:number}} seed */
+/** @param {{id:string,name:string,type:import('./types').WellType,lat:number,lng:number,factor:number}} seed
+ * @returns {import('./types').Well} */
 function buildWell(seed) {
   const telemetry = { ...SEED_TELEMETRY };
   telemetry.wellPressure = clamp(r2(SEED_TELEMETRY.wellPressure * seed.factor), RANGES.wellPressure.min, RANGES.wellPressure.max);
   telemetry.heatPipePressure = clamp(r2(SEED_TELEMETRY.heatPipePressure * seed.factor), RANGES.heatPipePressure.min, RANGES.heatPipePressure.max);
   telemetry.temperature = clamp(r2(SEED_TELEMETRY.temperature * (0.5 + seed.factor / 2)), RANGES.temperature.min, RANGES.temperature.max);
   const output = seed.type === 'reinjection' ? reinjectionOutput(telemetry) : wellOutput(telemetry);
-  return {
+  return /** @type {import('./types').Well} */ ({
     id: seed.id, name: seed.name, type: seed.type, lat: seed.lat, lng: seed.lng,
     telemetry, output, status: wellStatus(telemetry),
-  };
+  });
 }
 
-/** @returns {Array<object>} */
+/** @returns {import('./types').Well[]} */
 export function makeWells() {
   return WELL_SEED.map(buildWell);
 }
 
-/** @param {object} well @param {() => number} [rnd] */
+/** @param {import('./types').Well} well @param {() => number} [rnd]
+ * @returns {import('./types').Well} */
 export function stepWell(well, rnd = Math.random) {
-  const telemetry = stepTelemetry(well.telemetry, rnd);
+  const telemetry = /** @type {Record<string, number>} */ (stepTelemetry(/** @type {Record<string, number>} */ (/** @type {unknown} */ (well.telemetry)), rnd));
   const output = well.type === 'reinjection' ? reinjectionOutput(telemetry) : wellOutput(telemetry);
-  return { ...well, telemetry, output, status: wellStatus(telemetry) };
+  return /** @type {import('./types').Well} */ (/** @type {unknown} */ ({ ...well, telemetry, output, status: wellStatus(telemetry) }));
 }
 
-/** @param {Array<object>} wells @param {() => number} [rnd] */
+/** @param {import('./types').Well[]} wells @param {() => number} [rnd]
+ * @returns {import('./types').Well[]} */
 export function stepField(wells, rnd = Math.random) {
   return wells.map((w) => stepWell(w, rnd));
 }
 
 /** Aggregate field KPIs. Steam/MW from production wells; brine from all.
- * @param {Array<object>} wells */
+ * @param {import('./types').Well[]} wells
+ * @returns {import('./types').FieldKpis} */
 export function fieldKpis(wells) {
   const prod = wells.filter((w) => w.type === 'production');
   const steamTh = r2(prod.reduce((s, w) => s + w.output.steamTh, 0));
