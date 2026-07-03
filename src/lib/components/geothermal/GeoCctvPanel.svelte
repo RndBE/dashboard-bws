@@ -5,14 +5,14 @@
   import { GEO_CAMERAS } from '../../geothermal/seed.js';
 </script>
 
-<div class="rounded-xl border border-line bg-panel p-2.5">
+<div class="flex h-full flex-col rounded-xl border border-line bg-panel p-2.5">
   <div class="mb-2 flex items-center justify-between px-0.5">
     <div class="text-[10px] font-bold uppercase tracking-wide text-ink-strong">CCTV Monitoring</div>
     <span class="flex items-center gap-1 text-[9px] font-semibold text-normal"><span class="h-1.5 w-1.5 rounded-full bg-normal"></span>Live</span>
   </div>
-  <div class="space-y-2">
+  <div class="flex min-h-0 flex-1 flex-col gap-2">
     {#each GEO_CAMERAS as cam (cam.id)}
-      <div class="group relative overflow-hidden rounded-md border border-line/80 bg-black" style="aspect-ratio:16/8.5">
+      <div class="group relative min-h-0 flex-1 overflow-hidden rounded-md border border-line/80 bg-black">
         {#if cam.online}
           <img
             src={camImage(cam)}

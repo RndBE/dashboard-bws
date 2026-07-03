@@ -1,29 +1,14 @@
 <script lang="ts">
-  import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
-  import Workflow from '@lucide/svelte/icons/workflow';
-  import LineChart from '@lucide/svelte/icons/line-chart';
-  import Table from '@lucide/svelte/icons/table';
-  import Bell from '@lucide/svelte/icons/bell';
-  import Cctv from '@lucide/svelte/icons/cctv';
-  import Activity from '@lucide/svelte/icons/activity';
-  import FileText from '@lucide/svelte/icons/file-text';
-  import Settings from '@lucide/svelte/icons/settings';
   import CloudRain from '@lucide/svelte/icons/cloud-rain';
   import Logo from '../layout/Logo.svelte';
   import { num } from '../../format';
   import { SITE, WEATHER } from '../../geothermal/seed.js';
+  import { geoSection } from '../../geothermal/store';
+  import { GEO_NAV, type GeoSection } from '../../config/geoNav';
 
-  const NAV = [
-    { icon: LayoutDashboard, label: 'Dashboard', active: true },
-    { icon: Workflow, label: 'SCADA', active: false },
-    { icon: LineChart, label: 'Trend & Chart', active: false },
-    { icon: Table, label: 'Data Table', active: false },
-    { icon: Bell, label: 'Alarm & Event', active: false },
-    { icon: Cctv, label: 'CCTV Monitoring', active: false },
-    { icon: Activity, label: 'System Status', active: false },
-    { icon: FileText, label: 'Reporting', active: false },
-    { icon: Settings, label: 'Configuration', active: false },
-  ];
+  function go(key: GeoSection) {
+    geoSection.set(key);
+  }
 </script>
 
 <aside class="flex w-56 shrink-0 flex-col border-r border-line bg-surface">
@@ -33,12 +18,16 @@
   </div>
 
   <nav class="flex flex-col gap-0.5 p-2">
-    {#each NAV as item}
+    {#each GEO_NAV as item}
+      {@const on = $geoSection === item.key}
       <button
-        disabled={!item.active}
-        class="flex items-center gap-2.5 rounded-md px-3 py-2 text-[12px] font-medium transition-colors
-          {item.active ? 'bg-accent/15 text-accent-bright' : 'text-ink-dim cursor-not-allowed'}"
+        onclick={() => go(item.key)}
+        class="group relative flex items-center gap-2.5 rounded-md px-3 py-2 text-[12px] font-medium transition-colors
+          {on ? 'bg-accent/15 text-accent-bright' : 'text-ink-muted hover:bg-[var(--surface-hover)] hover:text-ink'}"
       >
+        {#if on}
+          <span class="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-accent"></span>
+        {/if}
         <item.icon size={15} /> {item.label}
       </button>
     {/each}

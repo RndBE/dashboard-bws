@@ -4,6 +4,10 @@ import { paused } from '../stores';
 import { activeAlarmCount, stepTelemetry, worstStatus } from './wellpad.js';
 import { SEED_ALARMS, SEED_TELEMETRY, SYSTEM_ROWS } from './seed.js';
 import type { AlarmRow, GeoStatus, Telemetry } from './types';
+import type { GeoSection } from '../config/geoNav';
+
+/** menu aktif di dalam sub-sistem Geothermal */
+export const geoSection = writable<GeoSection>('dashboard');
 
 const TICK_MS = 5000;
 const HISTORY_KEYS = ['wellPressure', 'heatPipePressure', 'level', 'flowLs'] as const;
