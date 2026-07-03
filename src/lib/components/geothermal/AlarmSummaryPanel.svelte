@@ -1,5 +1,17 @@
 <script lang="ts">
   import { geoActiveAlarmCount, geoAlarms } from '../../geothermal/store';
+
+  const STATUS_LABEL: Record<'active' | 'shelved' | 'cleared', string> = {
+    active: 'ACTIVE',
+    shelved: 'SHELVED',
+    cleared: 'CLEARED',
+  };
+
+  const STATUS_CLS: Record<'active' | 'shelved' | 'cleared', string> = {
+    active: 'text-awas',
+    shelved: 'text-siaga',
+    cleared: 'text-normal',
+  };
 </script>
 
 <div class="rounded-xl border border-line bg-panel p-3">
@@ -14,7 +26,7 @@
         <tr class="border-t border-line/60">
           <td class="py-1 tnum text-ink-muted">{a.time}</td>
           <td class="py-1 text-ink">{a.label}</td>
-          <td class="py-1 text-right font-semibold {a.status === 'active' ? 'text-awas' : 'text-normal'}">{a.status === 'active' ? 'ACTIVE' : 'CLEARED'}</td>
+          <td class="py-1 text-right font-semibold {STATUS_CLS[a.status]}">{STATUS_LABEL[a.status]}</td>
         </tr>
       {/each}
     </tbody>
