@@ -14,19 +14,19 @@ export const MONITORED = [
 /** @param {number} ms @returns {string} HH:MM:SS */
 export function fmtClock(ms) {
   const d = new Date(ms);
-  const p = (n) => String(n).padStart(2, '0');
+  const p = (/** @type {number} */ n) => String(n).padStart(2, '0');
   return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
 /** Evaluate alarms against the current wells, mutating a working copy of prev.
- * @param {Array<object>} wells
+ * @param {Array<{id: string, telemetry: Record<string, number>}>} wells
  * @param {import('./types').AlarmRow[]} prev
  * @param {number} now  epoch ms
  * @param {number} nextId
  * @returns {{alarms: import('./types').AlarmRow[], nextId: number}} */
 export function evaluateAlarms(wells, prev, now, nextId) {
   const alarms = prev.map((a) => ({ ...a }));
-  const activeIdx = (wellId, tag) =>
+  const activeIdx = (/** @type {string} */ wellId, /** @type {string} */ tag) =>
     alarms.findIndex((a) => a.well === wellId && a.tag === tag && a.status === 'active');
   for (const w of wells) {
     for (const m of MONITORED) {
@@ -56,6 +56,7 @@ export function evaluateAlarms(wells, prev, now, nextId) {
 export function alarmStats(alarms) {
   const active = alarms.filter((a) => a.status === 'active');
   const bySeverity = { normal: 0, waspada: 0, siaga: 0, awas: 0 };
+  /** @type {Record<string, number>} */
   const tagCount = {};
   for (const a of active) {
     bySeverity[a.severity] = (bySeverity[a.severity] || 0) + 1;
