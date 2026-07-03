@@ -23,7 +23,26 @@ export interface Weather { temp: number; cond: string; wind: number; humidity: n
 export interface Valve { id: string; open: boolean; }
 export interface SensorTag { id: string; kind: 'pressure' | 'temp' | 'level'; }
 export interface SystemRow { key: string; label: string; state: GeoStatus; value: string; }
-export interface AlarmRow { time: string; label: string; status: 'active' | 'cleared'; }
+export interface AlarmRow {
+  id: number;
+  time: string;
+  raisedAt: number;
+  well: string;
+  tag: string;
+  label: string;
+  severity: GeoStatus;
+  value: number;
+  status: 'active' | 'cleared';
+  ack: boolean;
+}
+
+export interface GeoEvent {
+  id: number;
+  time: string;
+  kind: 'alarm' | 'valve' | 'comms' | 'operator';
+  message: string;
+}
+
 export type GeoCamera = Camera;
 
 export type WellType = 'production' | 'reinjection';
