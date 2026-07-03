@@ -21,13 +21,29 @@
     alarm: GeoAlarmPage,
     cctv: GeoCctvPage,
     status: GeoStatusPage,
+    health: GeoStatusPage,       // System Health reuses the status page for now
+    // Phase 2+ pages — placeholder until built:
+    fieldmap: GeoPlaceholder,
+    wells: GeoPlaceholder,
+    historian: GeoPlaceholder,
+    production: GeoPlaceholder,
+    instruments: GeoPlaceholder,
+    maintenance: GeoPlaceholder,
+    geochem: GeoPlaceholder,
     reporting: GeoPlaceholder,
     config: GeoPlaceholder,
   };
 
   const STUB: Partial<Record<GeoSection, { title: string; note: string }>> = {
-    reporting: { title: 'Reporting', note: 'Ekspor laporan harian, mingguan, dan bulanan well pad dalam format PDF & Excel. Modul dalam pengembangan.' },
-    config: { title: 'Configuration', note: 'Pengaturan tag instrumen, ambang alarm, dan parameter sistem. Modul dalam pengembangan.' },
+    fieldmap: { title: 'Field Map', note: 'Peta spasial sumur, pipa, separator, dan reinjeksi. Dibangun pada Fase 2.' },
+    wells: { title: 'Wells', note: 'Registry sumur dan drilldown per sumur. Dibangun pada Fase 2.' },
+    historian: { title: 'Historian', note: 'Query data historis tag telemetri. Dibangun pada Fase 3.' },
+    production: { title: 'Production', note: 'Output uap, brine, gross MW, dan capacity factor. Dibangun pada Fase 3.' },
+    instruments: { title: 'Instruments', note: 'Registry tag instrumen dan status kalibrasi. Dibangun pada Fase 4.' },
+    maintenance: { title: 'Maintenance', note: 'Work order dan kesehatan peralatan. Dibangun pada Fase 4.' },
+    geochem: { title: 'Geochemistry', note: 'Kimia brine, indeks scaling, NCG, dan pH. Dibangun pada Fase 4.' },
+    reporting: { title: 'Reporting', note: 'Laporan periodik dan kepatuhan lingkungan/ESDM. Dibangun pada Fase 5.' },
+    config: { title: 'Configuration', note: 'Pengaturan tag, ambang alarm, dan pengguna. Dibangun pada Fase 5.' },
   };
 
   const Current = $derived(PAGES[$geoSection]);
